@@ -1,0 +1,19 @@
+# direnv
+.envrc
+.direnv
+
+# executable
+preprocessor
+*.exe
+
+# config for IDEs
+.idea
+
+# cmake generated files
+**.cmake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+Testing
+.test_bins
+compile_commands.json
