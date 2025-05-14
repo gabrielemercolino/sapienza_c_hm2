@@ -8,6 +8,7 @@ preprocessor
 
 # config for IDEs
 .idea
+.cache
 
 # cmake generated files
 **.cmake
