@@ -15,6 +15,7 @@
 void defer_free_str(char **thing) { free(*thing); }
 
 PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
+  opterr = 0; // disable default error message
   // setup temp variables with invalid data so it can be detected later if
   // something is wrong
   char *file_name deferred_free_str = nullptr;
