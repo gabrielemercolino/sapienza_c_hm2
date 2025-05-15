@@ -3,7 +3,8 @@
 .direnv
 
 # executable
-preprocessor
+client
+server
 *.exe
 
 # config for IDEs
