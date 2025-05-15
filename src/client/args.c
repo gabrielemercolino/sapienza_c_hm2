@@ -35,7 +35,7 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
   };
 
   int option;
-  while ((option = getopt_long(argc, argv, "f:k:p:a:p:h", options, nullptr)) !=
+  while ((option = getopt_long(argc, argv, "f:k:p:a:P:h", options, nullptr)) !=
          -1) {
     switch (option) {
     case 'f':
