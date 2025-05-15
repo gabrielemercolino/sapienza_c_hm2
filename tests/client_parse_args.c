@@ -1,5 +1,6 @@
 #include "client/args.h"
 
+#include <errno.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,8 +13,29 @@ typedef struct {
 
 const TestCase cases[] = {
     {.argv_flat = "program", .expected = MISSING_FILE},
-    {.argv_flat = "program -f xyz", .expected = FILE_NOT_FOUND},
     {.argv_flat = "program -x idk", .expected = UNKNOWN_FLAG},
+    {.argv_flat = "program -f xyz", .expected = FILE_NOT_FOUND},
+    {.argv_flat = "program -f flake.nix", .expected = MISSING_KEY},
+    {.argv_flat = "program -f flake.nix -k 123",
+     .expected = MISSING_PARALLELISM},
+    {.argv_flat = "program -f flake.nix -k 123 -p 2",
+     .expected = MISSING_SERVER_IP},
+    {.argv_flat = "program -f flake.nix -k 123 -p 2 -a 123.456.789",
+     .expected = MISSING_SERVER_PORT},
+    {.argv_flat = "program -f flake.nix -k 123 -p 2 -a 123.456.789 -P 8080",
+     .expected = OK},
+    {.argv_flat = "program -f flake.nix -k 12k -p 2 -a 123.456.789 -P 8080",
+     .expected = MALFORMED_KEY},
+    {.argv_flat = "program -f flake.nix -k -1 -p 2 -a 123.456.789 -P 8080",
+     .expected = MALFORMED_KEY},
+    {.argv_flat = "program -f flake.nix -k 123 -p a -a 123.456.789 -P 8080",
+     .expected = MALFORMED_PARALLELISM},
+    {.argv_flat = "program -f flake.nix -k 123 -p -1 -a 123.456.789 -P 8080",
+     .expected = MALFORMED_PARALLELISM},
+    {.argv_flat = "program -f flake.nix -k 123 -p 2 -a 123.456.789 -P 8k",
+     .expected = MALFORMED_SERVER_PORT},
+    {.argv_flat = "program -f flake.nix -k 123 -p 2 -a 123.456.789 -P -8080",
+     .expected = MALFORMED_SERVER_PORT},
 };
 
 char **split(const char *str, int *tokens_size);
@@ -21,7 +43,10 @@ char **split(const char *str, int *tokens_size);
 int main() {
   size_t test_number = sizeof(cases) / sizeof(*cases);
   for (size_t i = 0; i < test_number; i++) {
-    optind = 1; // reset as it's global
+    // reset globals
+
+    optind = 0;
+    errno = 0;
 
     const TestCase test_case = cases[i];
     int argc_case;
