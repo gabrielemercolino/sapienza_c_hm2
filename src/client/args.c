@@ -24,7 +24,7 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
   // something is wrong
   char *file_name deferred_free_str = nullptr;
   char *key deferred_free_str = nullptr;
-  char *parallelism deferred_free_str = nullptr;
+  char *threads deferred_free_str = nullptr;
   char *server_ip deferred_free_str = nullptr;
   char *server_port deferred_free_str = nullptr;
 
@@ -67,9 +67,9 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
       break;
 
     case 't':
-      if (parallelism != nullptr)
+      if (threads != nullptr)
         return MULTIPLE_THREADS;
-      parallelism = strdup(optarg);
+      threads = strdup(optarg);
 
       // if the next token is not a flag the args are not valid
       if (optind < argc && argv[optind][0] != '-')
@@ -122,7 +122,7 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
   if (key == nullptr)
     return MISSING_KEY;
 
-  if (parallelism == nullptr)
+  if (threads == nullptr)
     return MISSING_THREADS;
 
   if (server_ip == nullptr)
@@ -137,10 +137,9 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
   if (errno != 0 || *end_key != '\0' || _key < 1 || _key > INT_MAX)
     return MALFORMED_KEY;
 
-  char *end_parallelism;
-  long _parallelism = strtol(parallelism, &end_parallelism, BASE_10);
-  if (errno != 0 || *end_parallelism != '\0' || _parallelism < 1 ||
-      _parallelism > INT_MAX)
+  char *end_threads;
+  long _threads = strtol(threads, &end_threads, BASE_10);
+  if (errno != 0 || *end_threads != '\0' || _threads < 1 || _threads > INT_MAX)
     return MALFORMED_THREADS;
 
   char *end_server_port;
@@ -152,7 +151,7 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
   // if here then the values can be safely casted and saved
   out->file_path = file_name;
   out->key = _key;
-  out->parallelism = _parallelism;
+  out->threads = _threads;
   out->server_ip = server_ip;
   out->server_port = _server_port;
 

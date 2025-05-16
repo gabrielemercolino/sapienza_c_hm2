@@ -6,9 +6,9 @@
 typedef struct {
   const char *file_path;
   int64_t key;
-  size_t parallelism;
+  uint64_t threads;
   const char *server_ip;
-  int server_port;
+  uint16_t server_port;
 } ClientConfig;
 
 typedef enum {
