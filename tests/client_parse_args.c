@@ -30,7 +30,7 @@ const TestCase cases[] = {
     },
     {
         .argv_flat = "program -f flake.nix -k 123",
-        .expected = MISSING_PARALLELISM,
+        .expected = MISSING_THREADS,
     },
     {
         .argv_flat = "program -f flake.nix -k 123 -p 2",
@@ -54,11 +54,11 @@ const TestCase cases[] = {
     },
     {
         .argv_flat = "program -f flake.nix -k 123 -p a -a 123.456.789 -P 8080",
-        .expected = MALFORMED_PARALLELISM,
+        .expected = MALFORMED_THREADS,
     },
     {
         .argv_flat = "program -f flake.nix -k 123 -p -1 -a 123.456.789 -P 8080",
-        .expected = MALFORMED_PARALLELISM,
+        .expected = MALFORMED_THREADS,
     },
     {
         .argv_flat = "program -f flake.nix -k 123 -p 2 -a 123.456.789 -P 8k",
