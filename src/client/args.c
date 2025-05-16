@@ -149,7 +149,7 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
     return MALFORMED_SERVER_PORT;
 
   // if here then the values can be safely casted and saved
-  out->file_path = file_name;
+  out->file_path = strdup(file_name);
   out->key = _key;
   out->threads = _threads;
   out->server_ip = server_ip;
