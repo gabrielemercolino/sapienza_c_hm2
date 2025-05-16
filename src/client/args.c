@@ -11,11 +11,15 @@
 #define MIN_PORT 0
 #define MAX_PORT 65535
 
+// macro used to inform compiler to add a call to the specified function
+// before ebery return statement to free the declared string as doing it
+// manually would result in too much boilerplate and less readable code
 #define deferred_free_str __attribute__((cleanup(defer_free_str)))
 void defer_free_str(char **thing) { free(*thing); }
 
 PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
   opterr = 0; // disable default error message
+
   // setup temp variables with invalid data so it can be detected later if
   // something is wrong
   char *file_name deferred_free_str = nullptr;
@@ -27,16 +31,16 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
   const struct option options[] = {
       {"file", required_argument, nullptr, 'f'},
       {"key", required_argument, nullptr, 'k'},
-      {"parallelism", required_argument, nullptr, 'p'},
+      {"threads", required_argument, nullptr, 't'},
       {"ip", required_argument, nullptr, 'a'},
-      {"port", required_argument, nullptr, 'P'},
+      {"port", required_argument, nullptr, 'p'},
       {"help", no_argument, nullptr, 'h'},
       // don't remove
       {nullptr, 0, nullptr, 0},
   };
 
   int option;
-  while ((option = getopt_long(argc, argv, "f:k:p:a:P:h", options, nullptr)) !=
+  while ((option = getopt_long(argc, argv, "f:k:t:a:p:h", options, nullptr)) !=
          -1) {
     switch (option) {
     case 'f':
@@ -62,14 +66,14 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
 
       break;
 
-    case 'p':
+    case 't':
       if (parallelism != nullptr)
-        return MULTIPLE_PARALLELISM;
+        return MULTIPLE_THREADS;
       parallelism = strdup(optarg);
 
       // if the next token is not a flag the args are not valid
       if (optind < argc && argv[optind][0] != '-')
-        return MULTIPLE_PARALLELISM;
+        return MULTIPLE_THREADS;
 
       break;
 
@@ -83,7 +87,7 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
         return MULTIPLE_SERVER_IP;
 
       break;
-    case 'P':
+    case 'p':
       if (server_port != nullptr)
         return MULTIPLE_SERVER_PORT;
       server_port = strdup(optarg);
@@ -119,7 +123,7 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
     return MISSING_KEY;
 
   if (parallelism == nullptr)
-    return MISSING_PARALLELISM;
+    return MISSING_THREADS;
 
   if (server_ip == nullptr)
     return MISSING_SERVER_IP;
@@ -137,7 +141,7 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
   long _parallelism = strtol(parallelism, &end_parallelism, BASE_10);
   if (errno != 0 || *end_parallelism != '\0' || _parallelism < 1 ||
       _parallelism > INT_MAX)
-    return MALFORMED_PARALLELISM;
+    return MALFORMED_THREADS;
 
   char *end_server_port;
   long _server_port = strtol(server_port, &end_server_port, BASE_10);
@@ -158,15 +162,15 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
 void print_usage(const char *program_name) {
   fprintf(stderr,
           "Usage:\n"
-          "  %s -f <input> -k <key> -p <parallelism> -a <server ip> -P <server "
+          "  %s -f <input> -k <key> -t <threads> -a <server ip> -p <server "
           "port> [-h]\n"
           "\n"
           "Options:\n"
           "  -f <input>       input file\n"
           "  -k <key>         the encryption key to use\n"
-          "  -p <parallelism> number of threads to use for encryption\n"
+          "  -t <threads>     number of threads to use for encryption\n"
           "  -a <server ip>   server ip\n"
-          "  -P <server port> server port"
+          "  -P <server port> server port\n"
           "  -h               show this help (ignores everything else)\n",
           program_name);
 }
@@ -196,12 +200,12 @@ char *pa_result_to_string(const PAResult result) {
   case MULTIPLE_KEYS:
     return "must specify only 1 key to use";
 
-  case MISSING_PARALLELISM:
-    return "must specify the level of parallelism";
-  case MALFORMED_PARALLELISM:
-    return "specified parallelism is invalid";
-  case MULTIPLE_PARALLELISM:
-    return "must specify the level of parallelism only once";
+  case MISSING_THREADS:
+    return "must specify the number of threads";
+  case MALFORMED_THREADS:
+    return "number of threads is invalid";
+  case MULTIPLE_THREADS:
+    return "must specify the number of threads only once";
 
   case MISSING_SERVER_IP:
     return "must specify the server IP";

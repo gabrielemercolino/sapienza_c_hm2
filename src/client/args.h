@@ -25,10 +25,10 @@ typedef enum {
   MALFORMED_KEY,
   MULTIPLE_KEYS,
 
-  MISSING_PARALLELISM, // TODO: maybe default to 2 or like 1 thread for each 64
-                       // bit chunk
-  MALFORMED_PARALLELISM,
-  MULTIPLE_PARALLELISM,
+  MISSING_THREADS, // TODO: maybe default to 2 or like 1 thread for each 64
+                   // bit chunk
+  MALFORMED_THREADS,
+  MULTIPLE_THREADS,
 
   MISSING_SERVER_IP, // TODO: maybe default to localhost
   MULTIPLE_SERVER_IP,
