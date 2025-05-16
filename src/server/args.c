@@ -1,9 +1,11 @@
 #include "args.h"
 #include "string.h"
 
+#include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
 #include <limits.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -16,6 +18,8 @@
 // manually would result in too much boilerplate and less readable code
 #define deferred_free_str __attribute__((cleanup(defer_free_str)))
 void defer_free_str(char **thing) { free(*thing); }
+
+bool is_valid_prefix(const char *prefix);
 
 PAResult parse_args(const int argc, char *argv[], ServerConfig *out) {
   opterr = 0; // disable default error message
@@ -90,7 +94,7 @@ PAResult parse_args(const int argc, char *argv[], ServerConfig *out) {
   if (max_connections == nullptr)
     return MISSING_MAX_CONNECTIONS;
 
-  if (file_prefix == nullptr)
+  if (file_prefix == nullptr || !is_valid_prefix(file_prefix))
     return MISSING_FILE_PREFIX;
 
   // now convert from strings to valid types
@@ -158,4 +162,24 @@ char *pa_result_to_string(const PAResult result) {
 
   // effectively unreachable but makes compiler happy
   return "unknown error";
+}
+
+bool is_valid_prefix(const char *prefix) {
+  // empty prefix
+  if (strlen(prefix) == 0)
+    return true;
+
+  // first char cannot be a number
+  {
+    char first = prefix[0];
+    if (!(isalpha(first)) && first != '_')
+      return false;
+  }
+
+  for (size_t i = 0; i < strlen(prefix); i++) {
+    if (!isalnum(prefix[i]) && prefix[0] != '_')
+      return false;
+  }
+
+  return true;
 }
