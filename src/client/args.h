@@ -5,7 +5,7 @@
 
 typedef struct {
   const char *file_path;
-  int64_t key;
+  uint64_t key;
   uint64_t threads;
   const char *server_ip;
   uint16_t server_port;
