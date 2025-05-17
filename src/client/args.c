@@ -110,6 +110,8 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
   }
 
   // now I can check if the args are all set
+  // and convert to the final type
+
   if (file_name == nullptr)
     return MISSING_FILE;
 
@@ -122,25 +124,24 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
   if (key == nullptr)
     return MISSING_KEY;
 
+  char *end_key;
+  long _key = strtol(key, &end_key, BASE_10);
+  if (errno != 0 || *end_key != '\0' || _key < 1 || _key > INT_MAX)
+    return MALFORMED_KEY;
+
   if (threads == nullptr)
     return MISSING_THREADS;
+
+  char *end_threads;
+  long _threads = strtol(threads, &end_threads, BASE_10);
+  if (errno != 0 || *end_threads != '\0' || _threads < 1 || _threads > INT_MAX)
+    return MALFORMED_THREADS;
 
   if (server_ip == nullptr)
     return MISSING_SERVER_IP;
 
   if (server_port == nullptr)
     return MISSING_SERVER_PORT;
-
-  // now convert from strings to valid types
-  char *end_key;
-  long _key = strtol(key, &end_key, BASE_10);
-  if (errno != 0 || *end_key != '\0' || _key < 1 || _key > INT_MAX)
-    return MALFORMED_KEY;
-
-  char *end_threads;
-  long _threads = strtol(threads, &end_threads, BASE_10);
-  if (errno != 0 || *end_threads != '\0' || _threads < 1 || _threads > INT_MAX)
-    return MALFORMED_THREADS;
 
   char *end_server_port;
   long _server_port = strtol(server_port, &end_server_port, BASE_10);
