@@ -17,5 +17,10 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  printf("Hello from client\n");
+  printf("Config:\n  -k: %lu\n  -t: %lu\n  -f: '%s'\n  -a: '%s'\n  -p: %hu\n",
+         config.key, config.threads, config.file_path, config.server_ip,
+         config.server_port);
+
   return 0;
 }
