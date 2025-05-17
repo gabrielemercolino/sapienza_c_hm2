@@ -41,6 +41,10 @@ const TestCase cases[] = {
         .expected = MALFORMED_THREADS,
     },
     {
+        .argv_flat = "program -f flake.nix -k 123 -t abc",
+        .expected = MALFORMED_THREADS,
+    },
+    {
         .argv_flat = "program -f flake.nix -k 123 -t 2",
         .expected = MISSING_SERVER_IP,
     },
