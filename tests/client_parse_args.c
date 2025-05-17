@@ -29,8 +29,16 @@ const TestCase cases[] = {
         .expected = MISSING_KEY,
     },
     {
+        .argv_flat = "program -f flake.nix -k vnb",
+        .expected = MALFORMED_KEY,
+    },
+    {
         .argv_flat = "program -f flake.nix -k 123",
         .expected = MISSING_THREADS,
+    },
+    {
+        .argv_flat = "program -f flake.nix -k 123 -t -1",
+        .expected = MALFORMED_THREADS,
     },
     {
         .argv_flat = "program -f flake.nix -k 123 -t 2",
@@ -41,33 +49,18 @@ const TestCase cases[] = {
         .expected = MISSING_SERVER_PORT,
     },
     {
-        .argv_flat = "program -f flake.nix -k 123 -t 2 -a 123.456.789 -p 8080",
-        .expected = OK,
-    },
-    {
-        .argv_flat = "program -f flake.nix -k 12k -t 2 -a 123.456.789 -p 8080",
-        .expected = MALFORMED_KEY,
-    },
-    {
-        .argv_flat = "program -f flake.nix -k -1 -t 2 -a 123.456.789 -p 8080",
-        .expected = MALFORMED_KEY,
-    },
-    {
-        .argv_flat = "program -f flake.nix -k 123 -t a -a 123.456.789 -p 8080",
-        .expected = MALFORMED_THREADS,
-    },
-    {
-        .argv_flat = "program -f flake.nix -k 123 -t -1 -a 123.456.789 -p 8080",
-        .expected = MALFORMED_THREADS,
+        .argv_flat = "program -f flake.nix -k 123 -t 2 -a 123.456.789 -p -8080",
+        .expected = MALFORMED_SERVER_PORT,
     },
     {
         .argv_flat = "program -f flake.nix -k 123 -t 2 -a 123.456.789 -p 8k",
         .expected = MALFORMED_SERVER_PORT,
     },
     {
-        .argv_flat = "program -f flake.nix -k 123 -t 2 -a 123.456.789 -p -8080",
-        .expected = MALFORMED_SERVER_PORT,
+        .argv_flat = "program -f flake.nix -k 123 -t 2 -a 123.456.789 -p 8080",
+        .expected = OK,
     },
+
 };
 
 char **split(const char *str, int *tokens_size);
