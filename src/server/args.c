@@ -91,17 +91,18 @@ PAResult parse_args(const int argc, char *argv[], ServerConfig *out) {
   if (threads == nullptr)
     return MISSING_THREADS;
 
-  if (max_connections == nullptr)
-    return MISSING_MAX_CONNECTIONS;
-
-  if (file_prefix == nullptr || !is_valid_prefix(file_prefix))
-    return MISSING_FILE_PREFIX;
-
-  // now convert from strings to valid types
   char *end_threads;
   long _threads = strtol(threads, &end_threads, BASE_10);
   if (errno != 0 || *end_threads != '\0' || _threads < 1 || _threads > INT_MAX)
     return MALFORMED_THREADS;
+
+  if (file_prefix == nullptr)
+    return MISSING_FILE_PREFIX;
+  if (!is_valid_prefix(file_prefix))
+    return MALFORMED_FILE_PREFIX;
+
+  if (max_connections == nullptr)
+    return MISSING_MAX_CONNECTIONS;
 
   char *end_conn;
   long _conn = strtol(max_connections, &end_conn, BASE_10);
@@ -149,6 +150,8 @@ char *pa_result_to_string(const PAResult result) {
 
   case MISSING_FILE_PREFIX:
     return "must specify file prefix";
+  case MALFORMED_FILE_PREFIX:
+    return "file prefix is invalid";
   case MULTIPLE_FILE_PREFIX:
     return "must specify file prefix only once";
 
