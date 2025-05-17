@@ -153,7 +153,7 @@ PAResult parse_args(const int argc, char *argv[], ClientConfig *out) {
   out->file_path = strdup(file_name);
   out->key = _key;
   out->threads = _threads;
-  out->server_ip = server_ip;
+  out->server_ip = strdup(server_ip);
   out->server_port = _server_port;
 
   return OK;
