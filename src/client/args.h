@@ -37,8 +37,8 @@ typedef enum {
   MALFORMED_SERVER_PORT,
   MULTIPLE_SERVER_PORT,
 
-} PAResult;
+} CPAResult;
 
-PAResult parse_args(const int argc, char *argv[], ClientConfig *out);
-char *pa_result_to_string(PAResult result);
-void print_usage(const char *program_name);
+CPAResult client_parse_args(const int argc, char *argv[], ClientConfig *out);
+char *client_pa_result_to_string(CPAResult result);
+void client_print_usage(const char *program_name);

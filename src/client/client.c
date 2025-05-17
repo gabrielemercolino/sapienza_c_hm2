@@ -4,16 +4,16 @@
 
 int main(int argc, char *argv[]) {
   ClientConfig config = {0};
-  PAResult result = parse_args(argc, argv, &config);
+  PAResult result = client_parse_args(argc, argv, &config);
 
   if (result == ONLY_HELP) {
-    print_usage(argv[0]);
+    client_print_usage(argv[0]);
     return 0;
   }
 
   if (result != OK) {
-    fprintf(stderr, "%s\n", pa_result_to_string(result));
-    print_usage(argv[0]);
+    fprintf(stderr, "%s\n", client_pa_result_to_string(result));
+    client_print_usage(argv[0]);
     return 1;
   }
 

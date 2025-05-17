@@ -8,7 +8,7 @@
 
 typedef struct {
   char *argv_flat;
-  PAResult expected;
+  CPAResult expected;
 } TestCase;
 
 const TestCase cases[] = {
@@ -82,12 +82,12 @@ int main() {
     char **argv_case = split(test_case.argv_flat, &argc_case);
     ClientConfig __c;
 
-    const PAResult result = parse_args(argc_case, argv_case, &__c);
+    const CPAResult result = client_parse_args(argc_case, argv_case, &__c);
 
     if (result != test_case.expected) {
       printf("Test case %zu, wrong result\n\texpected: %s\n\tgot: %s\n", i,
-             pa_result_to_string(test_case.expected),
-             pa_result_to_string(result));
+             client_pa_result_to_string(test_case.expected),
+             client_pa_result_to_string(result));
       printf("argv:\n");
       for (int j = 0; j < argc_case; j++) {
         printf("\t%s\n", argv_case[j]);
