@@ -3,8 +3,10 @@
 .direnv
 
 # executable
-./client
-./server
+client
+server
+!src/client
+!src/server
 *.exe
 
 # config for IDEs
