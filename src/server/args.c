@@ -17,11 +17,11 @@
 // before ebery return statement to free the declared string as doing it
 // manually would result in too much boilerplate and less readable code
 #define deferred_free_str __attribute__((cleanup(defer_free_str)))
-void defer_free_str(char **thing) { free(*thing); }
+static void defer_free_str(char **thing) { free(*thing); }
 
-bool is_valid_prefix(const char *prefix);
+static bool is_valid_prefix(const char *prefix);
 
-PAResult parse_args(const int argc, char *argv[], ServerConfig *out) {
+SPAResult server_parse_args(const int argc, char *argv[], ServerConfig *out) {
   opterr = 0; // disable default error message
 
   // setup temp variables with invalid data so it can be detected later if
@@ -117,7 +117,7 @@ PAResult parse_args(const int argc, char *argv[], ServerConfig *out) {
   return OK;
 }
 
-void print_usage(const char *program_name) {
+void server_print_usage(const char *program_name) {
   fprintf(stderr,
           "Usage:\n"
           "  %s -t <threads> -p <file prefix> -c <max connections> [-h]\n"
@@ -130,7 +130,7 @@ void print_usage(const char *program_name) {
           program_name);
 }
 
-char *pa_result_to_string(const PAResult result) {
+char *server_pa_result_to_string(const SPAResult result) {
   switch (result) {
   case OK:
     return "success";

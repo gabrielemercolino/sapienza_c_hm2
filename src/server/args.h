@@ -26,8 +26,8 @@ typedef enum {
   MISSING_MAX_CONNECTIONS,
   MALFORMED_MAX_CONNECTIONS,
   MULTIPLE_MAX_CONNECTIONS,
-} PAResult;
+} SPAResult;
 
-PAResult parse_args(const int argc, char *argv[], ServerConfig *out);
-char *pa_result_to_string(PAResult result);
-void print_usage(const char *program_name);
+SPAResult server_parse_args(const int argc, char *argv[], ServerConfig *out);
+char *server_pa_result_to_string(SPAResult result);
+void server_print_usage(const char *program_name);
