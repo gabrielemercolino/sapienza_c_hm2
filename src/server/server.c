@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]) {
   ServerConfig config = {0};
-  PAResult result = server_parse_args(argc, argv, &config);
+  SPAResult result = server_parse_args(argc, argv, &config);
 
   if (result == ONLY_HELP) {
     server_print_usage(argv[0]);

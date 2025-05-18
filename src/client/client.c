@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]) {
   ClientConfig config = {0};
-  PAResult result = client_parse_args(argc, argv, &config);
+  CPAResult result = client_parse_args(argc, argv, &config);
 
   if (result == ONLY_HELP) {
     client_print_usage(argv[0]);
