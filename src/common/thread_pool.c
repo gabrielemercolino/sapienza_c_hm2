@@ -1,10 +1,7 @@
 #include "thread_pool.h"
 
-#include <assert.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 struct ThreadPool {
@@ -57,7 +54,7 @@ void thread_pool_free(ThreadPool *pool) {
   pool = NULL;
 }
 
-bool thread_pool_do(ThreadPool *pool, task_func_t fn, void *arg) {
+TPTaskResult thread_pool_do(ThreadPool *pool, task_func_t fn, void *arg) {
   // wait for a thread to close if the maximum number of threads is reached
   sem_wait(&pool->limiter);
 
@@ -65,10 +62,9 @@ bool thread_pool_do(ThreadPool *pool, task_func_t fn, void *arg) {
 
   // if work couldn't be allocated
   if (!task) {
-    fprintf(stderr, "couldn't allocate memory for the requested task\n");
     // I still need to ensure that the semaphore is valid
     sem_post(&pool->limiter);
-    return false;
+    return FAILED_CREATION;
   }
 
   task->func = fn;
@@ -89,10 +85,8 @@ bool thread_pool_do(ThreadPool *pool, task_func_t fn, void *arg) {
     pthread_detach(thread);
     // the semaphore in this case has to be updated only when the task is done
     // in `task_wrapper`
-    return true;
+    return OK;
   }
-
-  fprintf(stderr, "couldn't create thread for the requested task\n");
 
   // I still have to ensure to have a valid state
   pthread_mutex_lock(&pool->join_lock);
@@ -103,7 +97,55 @@ bool thread_pool_do(ThreadPool *pool, task_func_t fn, void *arg) {
   free(task);
   // don't free `arg` as it's a responsibility of the caller to free the memory
   // if the task couldn't be created
-  return false;
+  return FAILED_START;
+}
+
+TPTaskResult thread_pool_try_do(ThreadPool *pool, task_func_t fn, void *arg) {
+  // try to get teh semaphore without blocking
+  if (sem_trywait(&pool->limiter) != 0) {
+    return POOL_BUSY;
+  }
+
+  TPTask *task = malloc(sizeof(TPTask));
+
+  // if work couldn't be allocated
+  if (!task) {
+    // I still need to ensure that the semaphore is valid
+    sem_post(&pool->limiter);
+    return FAILED_CREATION;
+  }
+
+  task->func = fn;
+  task->arg = arg;
+  task->pool = pool;
+
+  pthread_mutex_lock(&pool->join_lock);
+  pool->active_threads++;
+  pthread_mutex_unlock(&pool->join_lock);
+
+  pthread_t thread;
+  int res = pthread_create(&thread, NULL, task_wrapper, task);
+
+  // res == 0 -> ok
+  if (res == 0) {
+    // ensures that the thread can close on it's own, the join machanism
+    // is not required and is implemented manually
+    pthread_detach(thread);
+    // the semaphore in this case has to be updated only when the task is done
+    // in `task_wrapper`
+    return OK;
+  }
+
+  // I still have to ensure to have a valid state
+  pthread_mutex_lock(&pool->join_lock);
+  pool->active_threads--;
+  pthread_mutex_unlock(&pool->join_lock);
+  sem_post(&pool->limiter);
+
+  free(task);
+  // don't free `arg` as it's a responsibility of the caller to free the memory
+  // if the task couldn't be created
+  return FAILED_START;
 }
 
 void thread_pool_join(ThreadPool *pool) {

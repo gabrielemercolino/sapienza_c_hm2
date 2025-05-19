@@ -14,6 +14,13 @@ typedef struct ThreadPool ThreadPool;
  */
 typedef void (*task_func_t)(void *arg);
 
+typedef enum {
+  OK,              // task created and started
+  POOL_BUSY,       // thread pool has not free threads
+  FAILED_CREATION, // failed to allocate memory for the task
+  FAILED_START     // failed to start the task
+} TPTaskResult;
+
 /**
  * @brief creates a thread pool with the specified maximum number of threads
  *
@@ -52,9 +59,24 @@ void thread_pool_free(ThreadPool *pool);
  * @param pool the thread pool
  * @param fn the task
  * @param arg the task argument
- * @return true if the task was created successfully
+ * @return `OK` if successful or an error status
  */
-bool thread_pool_do(ThreadPool *pool, task_func_t fn, void *arg);
+TPTaskResult thread_pool_do(ThreadPool *pool, task_func_t fn, void *arg);
+
+/**
+ * @brief submits a task to the thread pool in a non-blocking way
+ *
+ * Same as `thread_pool_do` but exits early if the task could not be created as
+ * the pool is completely used
+ *
+ * The non-blocking part refers to the creation of the task
+ *
+ * @param pool the thread pool
+ * @param fn the task
+ * @param arg the task argument
+ * @return `OK` if successful or an error status
+ */
+TPTaskResult thread_pool_try_do(ThreadPool *pool, task_func_t fn, void *arg);
 
 /**
  * @brief waits until all tasks are completed
