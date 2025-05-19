@@ -18,7 +18,7 @@ struct ThreadPool {
 
 typedef struct {
   ThreadPool *pool;
-  thread_func_t func;
+  task_func_t func;
   void *arg;
 } TPTask;
 
@@ -57,7 +57,7 @@ void thread_pool_free(ThreadPool *pool) {
   pool = NULL;
 }
 
-bool thread_pool_do(ThreadPool *pool, thread_func_t fn, void *arg) {
+bool thread_pool_do(ThreadPool *pool, task_func_t fn, void *arg) {
   // wait for a thread to close if the maximum number of threads is reached
   sem_wait(&pool->limiter);
 

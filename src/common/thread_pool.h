@@ -12,7 +12,7 @@ typedef struct ThreadPool ThreadPool;
  *
  * The function receives a void pointer and returns nothing
  */
-typedef void (*thread_func_t)(void *arg);
+typedef void (*task_func_t)(void *arg);
 
 /**
  * @brief creates a thread pool with the specified maximum number of threads
@@ -54,7 +54,7 @@ void thread_pool_free(ThreadPool *pool);
  * @param arg the task argument
  * @return true if the task was created successfully
  */
-bool thread_pool_do(ThreadPool *pool, thread_func_t fn, void *arg);
+bool thread_pool_do(ThreadPool *pool, task_func_t fn, void *arg);
 
 /**
  * @brief waits until all tasks are completed
