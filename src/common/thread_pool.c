@@ -8,11 +8,12 @@
 #include <stdlib.h>
 
 struct ThreadPool {
-  size_t max_threads;
-  sem_t limiter;
-  pthread_mutex_t join_lock;
-  size_t active_threads;
-  pthread_cond_t join_cond;
+  size_t max_threads; // maximum number of threads
+  sem_t limiter;      // semaphore used to ensure the max threads limit
+
+  size_t active_threads;     // number of active threads
+  pthread_mutex_t join_lock; // needed to use `active_threads` safely
+  pthread_cond_t join_cond; // signal trigghered by the last thread when closing
 };
 
 typedef struct {
@@ -21,7 +22,16 @@ typedef struct {
   void *arg;
 } TPTask;
 
-static void *task_wrapper(void *raw);
+/**
+ * @brief manages the lifetime of the task
+ *
+ * Calls the task function with it's argument and when it's done updates the
+ * pool info
+ *
+ * @param task_raw the `TPTask` ptr as a `void*` for signature reasons
+ * @return always `NULL` for signature reasons
+ */
+static void *task_wrapper(void *task_raw);
 
 ThreadPool *create_thread_pool(size_t max_threads) {
   ThreadPool *tp = malloc(sizeof(ThreadPool));
@@ -48,6 +58,7 @@ void thread_pool_free(ThreadPool *pool) {
 }
 
 bool thread_pool_do(ThreadPool *pool, thread_func_t fn, void *arg) {
+  // wait for a thread to close if the maximum number of threads is reached
   sem_wait(&pool->limiter);
 
   TPTask *task = malloc(sizeof(TPTask));
@@ -55,6 +66,7 @@ bool thread_pool_do(ThreadPool *pool, thread_func_t fn, void *arg) {
   // if work couldn't be allocated
   if (!task) {
     fprintf(stderr, "couldn't allocate memory for the requested task\n");
+    // I still need to ensure that the semaphore is valid
     sem_post(&pool->limiter);
     return false;
   }
@@ -72,16 +84,25 @@ bool thread_pool_do(ThreadPool *pool, thread_func_t fn, void *arg) {
 
   // res == 0 -> ok
   if (res == 0) {
+    // ensures that the thread can close on it's own, the join machanism
+    // is not required and is implemented manually
     pthread_detach(thread);
+    // the semaphore in this case has to be updated only when the task is done
+    // in `task_wrapper`
     return true;
   }
 
   fprintf(stderr, "couldn't create thread for the requested task\n");
+
+  // I still have to ensure to have a valid state
   pthread_mutex_lock(&pool->join_lock);
   pool->active_threads--;
   pthread_mutex_unlock(&pool->join_lock);
   sem_post(&pool->limiter);
+
   free(task);
+  // don't free `arg` as it's a responsibility of the caller to free the memory
+  // if the task couldn't be created
   return false;
 }
 
@@ -92,11 +113,14 @@ void thread_pool_join(ThreadPool *pool) {
   pthread_mutex_unlock(&pool->join_lock);
 }
 
-static void *task_wrapper(void *raw) {
-  TPTask *work = raw;
-  ThreadPool *pool = work->pool;
-  work->func(work->arg);
+static void *task_wrapper(void *task_raw) {
+  TPTask *task = task_raw;
+  ThreadPool *pool = task->pool;
 
+  // call the task
+  task->func(task->arg);
+
+  // now the task is done and I need to update the pool
   pthread_mutex_lock(&pool->join_lock);
 
   pool->active_threads--;
@@ -106,6 +130,6 @@ static void *task_wrapper(void *raw) {
   pthread_mutex_unlock(&pool->join_lock);
   sem_post(&pool->limiter);
 
-  free(work);
+  free(task);
   return NULL; // needed for the signature but not used
 }
