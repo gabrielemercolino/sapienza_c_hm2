@@ -19,7 +19,7 @@ typedef struct {
   ThreadPool *pool;
   thread_func_t func;
   void *arg;
-} TPoolWork;
+} TPTask;
 
 static void *task_wrapper(void *raw);
 
@@ -50,25 +50,25 @@ void thread_pool_free(ThreadPool *pool) {
 bool thread_pool_do(ThreadPool *pool, thread_func_t fn, void *arg) {
   sem_wait(&pool->limiter);
 
-  TPoolWork *work = malloc(sizeof(TPoolWork));
+  TPTask *task = malloc(sizeof(TPTask));
 
   // if work couldn't be allocated
-  if (!work) {
+  if (!task) {
     fprintf(stderr, "couldn't allocate memory for the requested task\n");
     sem_post(&pool->limiter);
     return false;
   }
 
-  work->func = fn;
-  work->arg = arg;
-  work->pool = pool;
+  task->func = fn;
+  task->arg = arg;
+  task->pool = pool;
 
   pthread_mutex_lock(&pool->join_lock);
   pool->active_threads++;
   pthread_mutex_unlock(&pool->join_lock);
 
   pthread_t thread;
-  int res = pthread_create(&thread, NULL, task_wrapper, work);
+  int res = pthread_create(&thread, NULL, task_wrapper, task);
 
   // res == 0 -> ok
   if (res == 0) {
@@ -81,7 +81,7 @@ bool thread_pool_do(ThreadPool *pool, thread_func_t fn, void *arg) {
   pool->active_threads--;
   pthread_mutex_unlock(&pool->join_lock);
   sem_post(&pool->limiter);
-  free(work);
+  free(task);
   return false;
 }
 
@@ -93,7 +93,7 @@ void thread_pool_join(ThreadPool *pool) {
 }
 
 static void *task_wrapper(void *raw) {
-  TPoolWork *work = raw;
+  TPTask *work = raw;
   ThreadPool *pool = work->pool;
   work->func(work->arg);
 
