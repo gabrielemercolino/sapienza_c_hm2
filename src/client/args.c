@@ -10,6 +10,8 @@
 #define BASE_10 10
 #define MIN_PORT 0
 #define MAX_PORT 65535
+// while I could just set it to 8 it's more explicit in this way as it's clearer
+// that it means "enough chars to cover an entire `uint64_t`"
 #define KEY_LENGTH sizeof(uint64_t) / sizeof(char)
 
 // macro used to inform compiler to add a call to the specified function
@@ -18,6 +20,14 @@
 #define deferred_free_str __attribute__((cleanup(defer_free_str)))
 static void defer_free_str(char **thing) { free(*thing); }
 
+/**
+ * @brief concatenates the values of the string in a `uint64_t`
+ *
+ * The string must be `KEY_LENGTH` chars long
+ *
+ * @param str the string
+ * @return the result of the concatenation
+ */
 static uint64_t parse_key(const char *str);
 
 CPAResult client_parse_args(const int argc, char *argv[], ClientConfig *out) {
