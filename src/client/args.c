@@ -10,12 +10,15 @@
 #define BASE_10 10
 #define MIN_PORT 0
 #define MAX_PORT 65535
+#define KEY_LENGTH sizeof(uint64_t) / sizeof(char)
 
 // macro used to inform compiler to add a call to the specified function
 // before ebery return statement to free the declared string as doing it
 // manually would result in too much boilerplate and less readable code
 #define deferred_free_str __attribute__((cleanup(defer_free_str)))
 static void defer_free_str(char **thing) { free(*thing); }
+
+static uint64_t parse_key(const char *str);
 
 CPAResult client_parse_args(const int argc, char *argv[], ClientConfig *out) {
   opterr = 0; // disable default error message
@@ -124,17 +127,17 @@ CPAResult client_parse_args(const int argc, char *argv[], ClientConfig *out) {
   if (key == nullptr)
     return MISSING_KEY;
 
-  char *end_key;
-  long _key = strtol(key, &end_key, BASE_10);
-  if (errno != 0 || *end_key != '\0' || _key < 1 || _key > INT_MAX)
+  if (strlen(key) != KEY_LENGTH)
     return MALFORMED_KEY;
+
+  uint64_t _key = parse_key(key);
 
   if (threads == nullptr)
     return MISSING_THREADS;
 
   char *end_threads;
   long _threads = strtol(threads, &end_threads, BASE_10);
-  if (errno != 0 || *end_threads != '\0' || _threads < 1 || _threads > INT_MAX)
+  if (errno != 0 || *end_threads != '\0' || _threads < 1 || _threads > UINT_MAX)
     return MALFORMED_THREADS;
 
   if (server_ip == nullptr)
@@ -222,4 +225,15 @@ char *client_pa_result_to_string(const CPAResult result) {
 
   // effectively unreachable but makes compiler happy
   return "unknown error";
+}
+
+static uint64_t parse_key(const char *str) {
+  uint64_t key = 0;
+
+  for (size_t i = 0; i < KEY_LENGTH; ++i) {
+    key <<= 8;
+    key |= str[i];
+  }
+
+  return key;
 }
