@@ -1,14 +1,9 @@
 #include "args.h"
+#include "socket.h"
 #include "read_file.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 
 int main(int argc, char *argv[]) {
   ClientConfig config = {0};
@@ -31,73 +26,31 @@ int main(int argc, char *argv[]) {
          config.server_port);
 
   // Create socket
-  int client_socket = socket(AF_INET, SOCK_STREAM, 0);
-  if (client_socket < 0) {
-    perror("Error creating socket");
-    return 1;
-  }
-
-  // Set up the server address structure
-  struct sockaddr_in serv_addr;
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port = htons(config.server_port);
-  // Convert the server IP address from string to binary
-  if (inet_pton(AF_INET, config.server_ip, &serv_addr.sin_addr) <= 0) {
-      close(client_socket);
-      perror("Invalid address");
-      return 1;
-  }
-
-  // Connect to the server
-  if (connect(client_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-      close(client_socket);
-      perror("Connection failed");
-      return 1;
-  }
-  printf("Connected to server %s:%hu\n", config.server_ip, config.server_port);
+  int client_socket = create_socket(config.server_ip, config.server_port);
+  if (client_socket < 0) return 1;
 
   // Get file text
-  Text text = get_text(config.file_path);
-  if (text.length < 0) {
-    perror("Error reading file");
-    close(client_socket);
-    return 1;
-  }
+  char *text = get_text(config.file_path);
+  uint16_t length = strlen(text);
 
 
 
 
 
-  /* Take the text and split it into 64 bit blocks, 
-     do xor operation with key using at most p threads,
-     thread in encryption can not be interrupted by SIGINT, SIGALRM, SIGUSR1, SIGUSR2, SIGTERM.
-     and finally combine these blocks */
+  /* encryption ... */
 
 
 
 
 
-  // Send message to the server                                               <-- Write encrypted message here
-  int bytes_write = write(client_socket, &text.length, sizeof(text.length));  // replace with encrypted message
-  bytes_write += write(client_socket, text.text, strlen(text.text));          // replace with encrypted message length
-  bytes_write += write(client_socket, &config.key, sizeof(config.key));
-  if (bytes_write < 0) {
-    perror("Error writing to socket");
-    close(client_socket);
-    return 1;
-  }
-  printf("Sent message successfully\n");
-  free_text(&text);
+  // Send message to the server                         <-- replace with the encrypted message
+  send_message(client_socket, length, text, config.key);
 
   // Receive message from the server
-  char ack[64];
-  int bytes_read = read(client_socket, ack, 64);
-  if (bytes_read < 0) 
-    perror("Error reading from socket");
-  else
-    printf("Ack from server: %s\n",ack);
+  char ack_buffer[64];
+  receive_ack(client_socket, ack_buffer, 64);
 
   // Close connection
-  close(client_socket);
+  close_socket(client_socket);
   return 0;
 }
