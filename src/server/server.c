@@ -30,15 +30,20 @@ int main(int argc, char *argv[]) {
          config.file_prefix, config.max_connections);
 
   // Create socket
-  ServerSocket server_socket = create_server_socket("INADDR_ANY", 8080, config.max_connections);
+  ServerSocket *server_socket = create_server_socket("INADDR_ANY", 8080, config.max_connections);
 
   while (1) {
     printf("Waiting for a connection...\n");
-    ClientSocket client_socket = accept_client_connection(server_socket);
+    ClientSocket *client_socket = accept_client_connection(server_socket);
+    if (!client_socket) continue;
+    
 
     // Read the message from the client
     int b_read = read_message(client_socket);
-    if (b_read < 0) continue;
+    if (b_read < 0) {
+      close_client_socket(client_socket);
+      continue;
+    }
 
 
 
@@ -51,7 +56,10 @@ int main(int argc, char *argv[]) {
     
     // Send acknowledgment back to the client
     int b_write = send_ack(client_socket);
-    if (b_write < 0) continue;
+    if (b_write < 0) {
+      close_client_socket(client_socket);
+      continue;
+    }
 
     // Close the client socket
     close_client_socket(client_socket);

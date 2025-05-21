@@ -3,6 +3,7 @@
 #include "socket.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 int main(int argc, char *argv[]) {
@@ -26,8 +27,11 @@ int main(int argc, char *argv[]) {
          config.server_port);
 
   // Create socket
-  ClientSocket client_socket = create_socket(config.server_ip, config.server_port);
-  if (client_socket.fd < 0) return 1;
+  ClientSocket *client_socket = create_socket(config.server_ip, config.server_port);
+  if (client_socket->fd < 0) {
+    close_socket(client_socket);
+    return 1;
+  }
 
   // Get file text
   char *text = get_text(config.file_path);
@@ -44,12 +48,18 @@ int main(int argc, char *argv[]) {
 
   // Send message to the server
   int b_send = send_message(client_socket, length, text, config.key);
-  if (b_send < 0) return 1;
+  if (b_send < 0) {
+    close_socket(client_socket);
+    return 1;
+  }
 
   // Receive ack from the server
   char ack_buffer[64];
   int b_read = receive_ack(client_socket, ack_buffer, 64);
-  if (b_read < 0) return 1;
+  if (b_read < 0) {
+    close_socket(client_socket);
+    return 1;
+  }
 
   // Close connection
   close_socket(client_socket);
