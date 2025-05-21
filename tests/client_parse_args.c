@@ -33,35 +33,38 @@ const TestCase cases[] = {
         .expected = MALFORMED_KEY,
     },
     {
-        .argv_flat = "program -f flake.nix -k 123",
+        .argv_flat = "program -f flake.nix -k emiliano",
         .expected = MISSING_THREADS,
     },
     {
-        .argv_flat = "program -f flake.nix -k 123 -t -1",
+        .argv_flat = "program -f flake.nix -k emiliano -t -1",
         .expected = MALFORMED_THREADS,
     },
     {
-        .argv_flat = "program -f flake.nix -k 123 -t abc",
+        .argv_flat = "program -f flake.nix -k emiliano -t abc",
         .expected = MALFORMED_THREADS,
     },
     {
-        .argv_flat = "program -f flake.nix -k 123 -t 2",
+        .argv_flat = "program -f flake.nix -k emiliano -t 2",
         .expected = MISSING_SERVER_IP,
     },
     {
-        .argv_flat = "program -f flake.nix -k 123 -t 2 -a 123.456.789",
+        .argv_flat = "program -f flake.nix -k emiliano -t 2 -a 123.456.789",
         .expected = MISSING_SERVER_PORT,
     },
     {
-        .argv_flat = "program -f flake.nix -k 123 -t 2 -a 123.456.789 -p -8080",
+        .argv_flat =
+            "program -f flake.nix -k emiliano -t 2 -a 123.456.789 -p -8080",
         .expected = MALFORMED_SERVER_PORT,
     },
     {
-        .argv_flat = "program -f flake.nix -k 123 -t 2 -a 123.456.789 -p 8k",
+        .argv_flat =
+            "program -f flake.nix -k emiliano -t 2 -a 123.456.789 -p 8k",
         .expected = MALFORMED_SERVER_PORT,
     },
     {
-        .argv_flat = "program -f flake.nix -k 123 -t 2 -a 123.456.789 -p 8080",
+        .argv_flat =
+            "program -f flake.nix -k emiliano -t 2 -a 123.456.789 -p 8080",
         .expected = OK,
     },
 
