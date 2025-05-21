@@ -9,12 +9,13 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-int create_server_socket(const char *ip, uint16_t port, uint16_t max_connections) {
+ServerSocket create_server_socket(const char *ip, uint16_t port, uint16_t max_connections) {
   // Create socket
-  int server_socket = socket(AF_INET, SOCK_STREAM, 0);
-  if (server_socket < 0) {
+  ServerSocket server_socket;
+  server_socket.fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (server_socket.fd < 0) {
     perror("Error creating socket");
-    return -1;
+    return server_socket;
   }
 
   // Set up the server address structure
@@ -26,69 +27,82 @@ int create_server_socket(const char *ip, uint16_t port, uint16_t max_connections
   } else {
     if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0) {
       perror("Invalid IP address");
-      close(server_socket);
-      return -1;
+      close(server_socket.fd);
+      server_socket.fd = -1;
+      return server_socket;
     }
   }
 
   // Bind the socket to the address
-  if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+  if (bind(server_socket.fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
     perror("Error binding socket");
-    close(server_socket);
-    return -1;
+    close(server_socket.fd);
+    server_socket.fd = -1;
+    return server_socket;
   }
 
   // Set the socket to listen for incoming connections
-  if (listen(server_socket, max_connections) < 0) {
+  if (listen(server_socket.fd, max_connections) < 0) {
     perror("Error listening on socket");
-    close(server_socket);
-    return -1;
+    close(server_socket.fd);
+    server_socket.fd = -1;
   }
 
   return server_socket;
 }
 
-int accept_client_connection(int server_socket) {
-  int connfd = accept(server_socket, (struct sockaddr *)NULL, NULL);
-  if (connfd < 0) {
+ClientSocket accept_client_connection(ServerSocket server_socket) {
+  ClientSocket client_socket;
+  client_socket.fd = accept(server_socket.fd, (struct sockaddr *)NULL, NULL);
+  if (client_socket.fd < 0) {
     perror("Error accepting connection");
-    return -1;
+    close(client_socket.fd);
+    return client_socket;
   }
   printf("Accepted connection from client\n");
 
-  return connfd;
+  return client_socket;
 }
 
-Message read_message(int connfd) {
-  Message msg;
+int read_message(ClientSocket client_socket) {
+  int bytes_read = read(client_socket.fd, &client_socket.length, sizeof(client_socket.length));
 
-  int bytes_read = read(connfd, &msg.length, sizeof(msg.length));
+  char *buffer = malloc(client_socket.length + 1);
+  bytes_read += read(client_socket.fd, buffer, client_socket.length);
+  buffer[client_socket.length] = '\0';
+  client_socket.buffer = buffer;
 
-  char *buffer = malloc(msg.length + 1);
-  bytes_read += read(connfd, buffer, msg.length);
-  buffer[msg.length] = '\0';
-  msg.buffer = buffer;
-
-  bytes_read += read(connfd, &msg.key, sizeof(msg.key));
+  bytes_read += read(client_socket.fd, &client_socket.key, sizeof(client_socket.key));
 
   if (bytes_read < 0) {
     perror("Error reading from socket");
-    close(connfd);
-    return msg;
+    close(client_socket.fd);
+    return -1;
   }
-  printf("Length: %i\n", msg.length);
-  printf("Buffer: %s\n", msg.buffer);
-  printf("Key: %lu\n", msg.key);
+  printf("Length: %i\n", client_socket.length);
+  printf("Buffer: %s\n", client_socket.buffer);
+  printf("Key: %lu\n", client_socket.key);
   
-  return msg;
+  return bytes_read;
 }
 
-void send_ack(int connfd) {
+int send_ack(ClientSocket client_socket) {
   // Send acknowledgment back to the client
   char ack[] = "Message received";
-  int bytes_sent = write(connfd, ack, strlen(ack));
+  int bytes_sent = write(client_socket.fd, ack, strlen(ack));
   if (bytes_sent < 0) {
     perror("Error sending acknowledgment");
+    close(client_socket.fd);
+    return -1;
   }
   printf("Sent ack successfully\n");
+
+  return bytes_sent;
+}
+
+void close_client_socket(ClientSocket client_socket) {
+  if (client_socket.fd >= 0) {
+    close(client_socket.fd);
+    free(client_socket.buffer);
+  }
 }

@@ -2,32 +2,42 @@
 #include <stddef.h>
 
 /**
+ * Structure to hold the client socket information.
+ */
+typedef struct {
+  int fd;
+} ClientSocket;
+
+/**
  * @brief Create a socket and connect to the server.
  * @param server_ip The IP address of the server.
  * @param server_port The port number of the server.
- * @return The socket file descriptor on success, or -1 on failure.
+ * @return The ClientSocket structure.
  */
-int create_socket(const char *server_ip, uint16_t server_port);
+ClientSocket create_socket(const char *server_ip, uint16_t server_port);
 
 /**
  * @brief Send a message to the server.
- * @param client_socket The socket file descriptor.
+ * @param client_socket The ClientSocket structure.
  * @param text The message to send.
  * @param length The length of the message.
- * @param key The key to send with the message.
+ * @param key The key for decryption.
+ * @return The number of bytes written to the socket. -1 on error.
+ * @note The message is sent in the format: length (2 bytes) + message + key (8 bytes).
  */
-void send_message(int client_socket, uint16_t length, char *enc_msg, uint64_t key);
+int send_message(ClientSocket client_socket, uint16_t length, char *enc_msg, uint64_t key);
 
 /**
  * @brief Receive a message from the server.
- * @param sockfd The socket file descriptor.
- * @param buffer The buffer to store the received message.
+ * @param client_socket The ClientSocket structure.
+ * @param buffer The buffer to store the received ack.
  * @param buffer_size The size of the buffer.
+ * @return The number of bytes read from the socket. -1 on error.
  */
-void receive_ack(int client_socket, char *buffer, size_t buffer_size);
+int receive_ack(ClientSocket client_socket, char *buffer, size_t buffer_size);
 
 /**
  * @brief Close the socket.
- * @param client_socket The socket file descriptor.
+ * @param client_socket The ClientSocket structure.
  */
-void close_socket(int client_socket);
+void close_socket(ClientSocket client_socket);

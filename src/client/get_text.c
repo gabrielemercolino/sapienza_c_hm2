@@ -1,4 +1,4 @@
-#include "read_file.h"
+#include "get_text.h"
 #include <stdio.h>
 #include <stdlib.h>
 
