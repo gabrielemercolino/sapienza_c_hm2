@@ -1,15 +1,17 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// Structure for client socket information.
 typedef struct {
-  int fd;
-  uint16_t length;
-  char *buffer;
-  uint64_t key;
+  int fd;           // File descriptor for the client socket
+  uint16_t length;  // Length of the message
+  char *buffer;     // Buffer to hold the message
+  uint64_t key;     // Key for encryption
 } ClientSocket;
 
+// Structure for server socket information.
 typedef struct {
-  int fd;
+  int fd;           // File descriptor for the server socket  
 } ServerSocket;
 
 /**

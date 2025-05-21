@@ -52,13 +52,15 @@ ServerSocket *create_server_socket(const char *ip, uint16_t port, uint16_t max_c
 }
 
 ClientSocket *accept_client_connection(ServerSocket *server_socket) {
+  // Allocate memory for the client socket
   ClientSocket *client_socket = malloc(sizeof(ClientSocket));
-  if (client_socket == NULL) {
+  if (!client_socket) {
     perror("Error allocating memory for client socket");
     return NULL;
   }
   client_socket->buffer = NULL;
 
+  // Accept a client connection
   client_socket->fd = accept(server_socket->fd, (struct sockaddr *)NULL, NULL);
   if (client_socket->fd < 0) {
     perror("Error accepting connection");
@@ -71,13 +73,16 @@ ClientSocket *accept_client_connection(ServerSocket *server_socket) {
 
 int read_message(ClientSocket *client_socket) {
   free(client_socket->buffer);
+  // Read the length of the message
   int bytes_read = read(client_socket->fd, &client_socket->length, sizeof(client_socket->length));
 
+  // Read the message
   char *buffer = malloc(client_socket->length + 1);
   bytes_read += read(client_socket->fd, buffer, client_socket->length);
   buffer[client_socket->length] = '\0';
   client_socket->buffer = buffer;
 
+  // Read the key
   bytes_read += read(client_socket->fd, &client_socket->key, sizeof(client_socket->key));
 
   if (bytes_read < 0) {

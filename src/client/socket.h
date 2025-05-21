@@ -1,11 +1,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
-/**
- * Structure to hold the client socket information.
- */
+// Structure for client socket information.
 typedef struct {
-  int fd;
+  int fd;          // File descriptor for the client socket
 } ClientSocket;
 
 /**
@@ -24,6 +22,7 @@ ClientSocket *create_socket(const char *server_ip, uint16_t server_port);
  * @param key The key for decryption.
  * @return The number of bytes written to the socket. -1 on error.
  * @note The message is sent in the format: length (2 bytes) + message + key (8 bytes).
+ * @note The message will be freed after sending.
  */
 int send_message(ClientSocket *client_socket, uint16_t length, char *enc_msg, uint64_t key);
 
