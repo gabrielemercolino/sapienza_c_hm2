@@ -73,13 +73,15 @@ ClientSocket *accept_client_connection(ServerSocket *server_socket) {
 
 int read_message(ClientSocket *client_socket) {
   free(client_socket->buffer);
-  // Read the length of the message
+  // Read the length of original message
   int bytes_read = read(client_socket->fd, &client_socket->length, sizeof(client_socket->length));
 
-  // Read the message
-  char *buffer = malloc(client_socket->length + 1);
-  bytes_read += read(client_socket->fd, buffer, client_socket->length);
-  buffer[client_socket->length] = '\0';
+  // Read the encrypted message
+  uint16_t enc_len;
+  bytes_read += read(client_socket->fd, &enc_len, sizeof(enc_len));
+  char *buffer = malloc(enc_len + 1);
+  bytes_read += read(client_socket->fd, buffer, enc_len);
+  buffer[enc_len] = '\0';
   client_socket->buffer = buffer;
 
   // Read the key
@@ -90,6 +92,7 @@ int read_message(ClientSocket *client_socket) {
     return -1;
   }
   printf("Length: %i\n", client_socket->length);
+  printf("Encrypted length: %hu\n", enc_len);
   printf("Buffer: %s\n", client_socket->buffer);
   printf("Key: %lu\n", client_socket->key);
   

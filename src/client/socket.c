@@ -42,6 +42,8 @@ ClientSocket *create_socket(const char *server_ip, unsigned short server_port) {
 int send_message(ClientSocket *client_socket, uint16_t length, char *enc_msg, uint64_t key) {
   // Send length, message, and key to the server
   int bytes_write = write(client_socket->fd, &length, sizeof(length));
+  uint16_t enc_len = strlen(enc_msg);
+  bytes_write += write(client_socket->fd, &enc_len, sizeof(enc_len));
   bytes_write += write(client_socket->fd, enc_msg, strlen(enc_msg));
   bytes_write += write(client_socket->fd, &key, sizeof(key));
   if (bytes_write <= 0) {
