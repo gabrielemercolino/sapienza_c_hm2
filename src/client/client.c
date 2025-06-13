@@ -1,6 +1,10 @@
-#include "client/args.h"
+#include "args.h"
+#include "get_text.h"
+#include "socket.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 int main(int argc, char *argv[]) {
   ClientConfig config = {0};
@@ -22,5 +26,42 @@ int main(int argc, char *argv[]) {
          config.key, config.threads, config.file_path, config.server_ip,
          config.server_port);
 
+  // Create socket
+  ClientSocket *client_socket = create_socket(config.server_ip, config.server_port);
+  if (client_socket->fd < 0) {
+    close_socket(client_socket);
+    return 1;
+  }
+
+  // Get file text
+  char *text = get_text(config.file_path);
+  uint16_t length = strlen(text);
+
+
+
+
+  /* encryption */
+
+
+
+  
+
+  // Send message to the server
+  int b_send = send_message(client_socket, length, text, config.key);
+  if (b_send < 0) {
+    close_socket(client_socket);
+    return 1;
+  }
+
+  // Receive ack from the server
+  char ack_buffer[64];
+  int b_read = receive_ack(client_socket, ack_buffer, 64);
+  if (b_read < 0) {
+    close_socket(client_socket);
+    return 1;
+  }
+
+  // Close connection
+  close_socket(client_socket);
   return 0;
 }
