@@ -18,3 +18,6 @@ typedef struct {
     size_t index;
     uint64_t key;
 } EncryptTask;
+
+
+char *encrypt_file(const char *filename, uint64_t key, size_t *out_len, size_t threads) ;

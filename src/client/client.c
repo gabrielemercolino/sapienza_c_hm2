@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "encryption.c"
+#include "encryption.h"
 
 int main(int argc, char *argv[]) {
     ClientConfig config = {0};
