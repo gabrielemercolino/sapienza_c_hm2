@@ -1,99 +1,92 @@
 //
 // Created by Pc on 13.06.2025.
 //
+#include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "common/thread_pool.h"
 #include "encryption.h"
 #include "get_text.h"
-#include "../../src/common/thread_pool.h"
-#define BLOCK_SIZE 8
 
-void xor_encrypt_block(void *arg){
-    EncryptTask *task = (EncryptTask *)arg;
-    // calcolare l'indirizzo dell'index-esimo blocco da cifrare (di 8 byte==64 bit),
-    // prendilo dalla stringa plaintext e interpretalo come un uint64_t* (cioè come un blocco da 64 bit)
-    uint64_t *block = (uint64_t *)(task->plaintext + task->index * BLOCK_SIZE);
+#define BLOCK_SIZE 64
 
+void xor_encrypt_block(void *arg) {
+  EncryptTask *task = (EncryptTask *)arg;
+  uint64_t *plaintext = (uint64_t *)task->plaintext;
+  uint64_t *ciphertext = (uint64_t *)task->ciphertext;
 
-    uint64_t *out = (uint64_t *)(task->ciphertext + task->index * BLOCK_SIZE);
+  // calcolare l'indirizzo dell'index-esimo blocco da cifrare (di 8 byte==64
+  // bit), prendilo dalla stringa plaintext e interpretalo come un uint64_t*
+  // (cioè come un blocco da 64 bit)
+  uint64_t block = plaintext[task->index];
+  uint64_t *out = &ciphertext[task->index];
 
-    *out = *block ^ task->key;
+  *out = block ^ task->key;
 
-    free(task);
+  free(task);
 }
 
-char *encrypt_file(const char *filename, uint64_t key, size_t *out_len, size_t threads) {
-    char *text = get_text(filename);
-    if (!text) {
-        return NULL;
-    }
+static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
 
-    // Calcolo lunghezza e padding
-    size_t length = strlen(text);
-    *out_len = length;
+char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
+                   size_t *padding_len, size_t threads) {
+  // blocca solo i segnali specificati
+  signal(SIGINT, signal_handler);
+  signal(SIGALRM, signal_handler);
+  signal(SIGUSR1, signal_handler);
+  signal(SIGUSR2, signal_handler);
+  signal(SIGTERM, signal_handler);
 
-    // size_t num_blocks = (length + BLOCK_SIZE - 1) / BLOCK_SIZE;
-    // size_t padded_len = num_blocks * BLOCK_SIZE;
+  char *text = get_text(filename);
+  if (!text) {
+    return NULL;
+  }
 
-    size_t padding=BLOCK_SIZE-(length%BLOCK_SIZE);
-    if (padding==BLOCK_SIZE) {
-        padding=0;
-    }
+  // Calcolo lunghezza e padding
+  size_t length = strlen(text) * 8;
+  *out_len = length;
 
-    size_t padded_len = length + padding;
-    size_t num_blocks=padded_len/BLOCK_SIZE;
+  size_t padding = BLOCK_SIZE - (length % BLOCK_SIZE);
+  if (padding == BLOCK_SIZE) {
+    padding = 0;
+  }
 
-    char *padded_text = calloc(1, padded_len);  // auto padding con '\0'
-    memcpy(padded_text, text, length);
-    free(text);
+  *padding_len = padding;
 
-    char *ciphertext = malloc(padded_len);
-    if (!ciphertext) {
-        free(padded_text);
-        return NULL;
-    }
+  size_t padded_len = length + padding;
+  size_t num_blocks = padded_len / BLOCK_SIZE;
 
-    ThreadPool *pool = create_thread_pool(threads);
+  char *padded_text = calloc(1, padded_len); // auto padding con '\0'
+  memcpy(padded_text, text, length);
+  free(text);
 
-    for (size_t i = 0; i < num_blocks; ++i) {
-        EncryptTask *task = malloc(sizeof(EncryptTask));
-        task->plaintext = padded_text;
-        task->ciphertext = ciphertext;
-        task->index = i;
-        task->key = key;
-
-        thread_pool_do(pool, xor_encrypt_block, task);
-    }
-
-    thread_pool_join(pool);
-    thread_pool_free(pool);
-
+  char *ciphertext = malloc(padded_len);
+  if (!ciphertext) {
     free(padded_text);
-    return ciphertext;
+    return NULL;
+  }
+
+  ThreadPool *pool = create_thread_pool(threads);
+
+  for (size_t i = 0; i < num_blocks; ++i) {
+    EncryptTask *task = malloc(sizeof(EncryptTask));
+    task->plaintext = padded_text;
+    task->ciphertext = ciphertext;
+    task->index = i;
+    task->key = key;
+
+    if (thread_pool_do(pool, xor_encrypt_block, task) != OK) {
+      fprintf(stderr, "Error theadpool encrypt task %zu\n", i);
+      free(task);
+    }
+  }
+
+  thread_pool_join(pool);
+  thread_pool_free(pool);
+
+  free(padded_text);
+  return ciphertext;
 }
-
-
-
-
-
-
-// int main(int argc, char *argv[]) {
-//     const char *filename = "tests/test";
-//     char *key_str="emiliano";
-//     uint64_t key;
-//     memcpy(&key, key_str, BLOCK_SIZE);
-//     size_t threads = 3;
-//
-//     size_t length=172;
-//     char *cipher = encrypt_file(filename, key, &length, threads);
-//     if (!cipher) {
-//         fprintf(stderr, "Errore nella cifratura\n");
-//         return 1;
-//     }
-//
-//     // Invia [cipher, length, key] al server qui...
-//     printf("%s\n", cipher);
-//     free(cipher);
-//     return 0;
-// }
