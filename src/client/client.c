@@ -1,15 +1,11 @@
 #include "args.h"
 #include "get_text.h"
 #include "socket.h"
+#include "../common/ack.h"
 
-#include "client.h"
-
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "encryption.h"
 
 int main(int argc, char *argv[]) {
   ClientConfig config = {0};
@@ -32,45 +28,53 @@ int main(int argc, char *argv[]) {
          config.server_port);
 
   // Create socket
-  ClientSocket *client_socket =
-      create_socket(config.server_ip, config.server_port);
+  ClientSocket *client_socket = create_socket(config.server_ip, config.server_port);
   if (client_socket->fd < 0) {
     close_socket(client_socket);
     return 1;
   }
 
   // Get file text
-  // char *text = get_text(config.file_path);
-  // size_t length = strlen(text);
+  char *text = get_text(config.file_path);
+  uint16_t org_length = strlen(text);
+
+
+
 
   /* encryption */
 
-  // inizio parte E
-  size_t out_len;
-  size_t padding_len;
-  char *ciphertext = encrypt_file(config.file_path, config.key, &out_len,
-                                  &padding_len, config.threads);
 
-  // fine parte E
 
-  size_t length = strlen(ciphertext);
+  
 
+  uint16_t enc_length = org_length;
   // Send message to the server
-  int b_send = send_message(client_socket, length, ciphertext, config.key);
+  int b_send = send_message(client_socket, org_length, enc_length, text, config.key);
   if (b_send < 0) {
     close_socket(client_socket);
     return 1;
   }
 
   // Receive ack from the server
-  char ack_buffer[64];
-  int b_read = receive_ack(client_socket, ack_buffer, 64);
+  uint16_t ack;
+  int b_read = receive_ack(client_socket, &ack);
   if (b_read < 0) {
     close_socket(client_socket);
     return 1;
   }
 
+  // Take action based on received ack
+  int flag = 1;
+  if (ack == ACK_ERROR) {
+    printf("Error\n");
+  } else if (ack == ACK_POOL_FAILED) {
+    printf("Error creating thread pool\n");
+  } else {
+    flag = 0;
+    printf("OK\n");
+  }
+
   // Close connection
   close_socket(client_socket);
-  return 0;
+  return flag;
 }

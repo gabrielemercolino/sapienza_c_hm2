@@ -72,42 +72,43 @@ ClientSocket *accept_client_connection(ServerSocket *server_socket) {
 }
 
 int read_message(ClientSocket *client_socket) {
-  free(client_socket->buffer);
-  // Read the length of original message
+  // Free old buffer if it exists
+  if (client_socket->buffer) {
+    free(client_socket->buffer);
+    client_socket->buffer = NULL;
+  }
+
+  // Read the original length, encrypted length, message and key
   int bytes_read = read(client_socket->fd, &client_socket->length, sizeof(client_socket->length));
 
-  // Read the encrypted message
   uint16_t enc_len;
   bytes_read += read(client_socket->fd, &enc_len, sizeof(enc_len));
-  char *buffer = malloc(enc_len + 1);
-  bytes_read += read(client_socket->fd, buffer, enc_len);
-  buffer[enc_len] = '\0';
-  client_socket->buffer = buffer;
 
-  // Read the key
+  client_socket->buffer = malloc(enc_len);
+  bytes_read += read(client_socket->fd, client_socket->buffer, enc_len);
+
   bytes_read += read(client_socket->fd, &client_socket->key, sizeof(client_socket->key));
 
+  // Check and print the results
   if (bytes_read < 0) {
     perror("Error reading from socket");
     return -1;
   }
-  printf("Length: %i\n", client_socket->length);
+  printf("Length: %d\n", client_socket->length);
   printf("Encrypted length: %hu\n", enc_len);
-  printf("Buffer: %s\n", client_socket->buffer);
   printf("Key: %lu\n", client_socket->key);
   
   return bytes_read;
 }
 
-int send_ack(ClientSocket *client_socket) {
+int send_ack(ClientSocket *client_socket, uint16_t ack) {
   // Send acknowledgment back to the client
-  char ack[] = "Message received";
-  int bytes_sent = write(client_socket->fd, ack, strlen(ack));
+  int bytes_sent = write(client_socket->fd, &ack, sizeof(ack));
   if (bytes_sent < 0) {
     perror("Error sending acknowledgment");
     return -1;
   }
-  printf("Sent ack successfully\n");
+  printf("Sent ack: %hu\n", ack);
 
   return bytes_sent;
 }

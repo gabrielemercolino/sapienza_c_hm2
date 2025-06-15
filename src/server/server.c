@@ -55,7 +55,8 @@ int main(int argc, char *argv[]) {
 
     
     // Send acknowledgment back to the client
-    int b_write = send_ack(client_socket);
+    uint16_t ack = 0;
+    int b_write = send_ack(client_socket, ack);
     if (b_write < 0) {
       close_client_socket(client_socket);
       continue;

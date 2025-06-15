@@ -5,7 +5,7 @@
 typedef struct {
   int fd;           // File descriptor for the client socket
   uint16_t length;  // Length of the message
-  char *buffer;     // Buffer to hold the message
+  void *buffer;     // Buffer to hold the message
   uint64_t key;     // Key for encryption
 } ClientSocket;
 
@@ -40,9 +40,10 @@ int read_message(ClientSocket *client_socket);
 /**
  * @brief Sends an acknowledgment back to the client.
  * @param client_socket The client socket.
+ * @param ack The acknowledgment.
  * @return The number of bytes sent. -1 on error.
  */
-int send_ack(ClientSocket *client_socket);
+int send_ack(ClientSocket *client_socket, uint16_t ack);
 
 /**
  * @brief Closes the client socket.

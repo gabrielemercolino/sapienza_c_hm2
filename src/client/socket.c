@@ -1,5 +1,7 @@
 #include "socket.h"
+#include "../common/ack.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,7 +32,11 @@ ClientSocket *create_socket(const char *server_ip, unsigned short server_port) {
 
   // Connect to the server
   if (connect(client_socket->fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-    perror("Connection failed");
+    if (errno == ECONNREFUSED) {
+      fprintf(stderr, "Connection refused by server %s:%hu\n", server_ip, server_port);
+    } else {
+      fprintf(stderr, "Error connecting to server %s:%hu\n", server_ip, server_port);
+    }
     client_socket->fd = -1;
     return client_socket;
   }
@@ -39,32 +45,54 @@ ClientSocket *create_socket(const char *server_ip, unsigned short server_port) {
   return client_socket;
 }
 
-int send_message(ClientSocket *client_socket, uint16_t length, char *enc_msg, uint64_t key) {
-  // Send length, message, and key to the server
-  int bytes_write = write(client_socket->fd, &length, sizeof(length));
-  uint16_t enc_len = strlen(enc_msg);
-  bytes_write += write(client_socket->fd, &enc_len, sizeof(enc_len));
-  bytes_write += write(client_socket->fd, enc_msg, strlen(enc_msg));
-  bytes_write += write(client_socket->fd, &key, sizeof(key));
-  if (bytes_write <= 0) {
+void *build_message(uint16_t org_length, uint16_t enc_length, void *enc_msg, uint64_t key, 
+                    size_t *message_length) {
+  // Allocate memory for the message
+  *message_length = sizeof(org_length) + sizeof(enc_length) + enc_length + sizeof(key);
+  void *message = malloc(*message_length);
+  if (!message) {
+    perror("Error allocating memory for message");
+    return NULL;
+  }
+
+  // Copy the original length, encrypted length, encrypted message, and key into the message
+  memcpy(message, &org_length, sizeof(org_length));
+  memcpy(message + sizeof(org_length), &enc_length, sizeof(enc_length));
+  memcpy(message + sizeof(org_length) + sizeof(enc_length), enc_msg, enc_length);
+  memcpy(message + sizeof(org_length) + sizeof(enc_length) + enc_length, &key, sizeof(key));
+
+  return message;
+}
+
+int send_message(ClientSocket *client_socket, uint16_t org_length, uint16_t enc_length, 
+                 void *enc_msg, uint64_t key) {
+  // Build the message to send
+  size_t msg_length;
+  void *message = build_message(org_length, enc_length, enc_msg, key, &msg_length);
+
+  // Send message to the server
+  int bytes_write = write(client_socket->fd, message, msg_length);
+  free(message);
+
+  if (bytes_write < 0) {
     perror("Error writing to socket");
     return -1;
   }
-  printf("Sent message successfully\n");
-  printf("Sent byte: %hu\n", length);
 
-  free(enc_msg);
+  // Print success message
+  printf("Sent message successfully (%d byte)\n", bytes_write);
+
   return bytes_write;
 }
 
-int receive_ack(ClientSocket *client_socket, char *ack_buffer, size_t buffer_size) {
+int receive_ack(ClientSocket *client_socket, uint16_t *ack) {
   // Receive acknowledgment from the server
-  int bytes_read = read(client_socket->fd, ack_buffer, buffer_size);
+  int bytes_read = read(client_socket->fd, ack, sizeof(uint16_t));
   if (bytes_read < 0) {
     perror("Error reading from socket");
     return -1;
   }
-  printf("Ack from server: %s\n", ack_buffer);
+  printf("Ack from server: %hu\n", *ack);
 
   return bytes_read;
 }
