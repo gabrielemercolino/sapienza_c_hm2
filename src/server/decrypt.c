@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common/thread_pool.h"
+#include "../common/thread_pool.h"
 #include "decrypt.h"
 
 #define BLOCK_SIZE 64
