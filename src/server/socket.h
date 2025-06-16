@@ -7,6 +7,8 @@ typedef struct {
   uint16_t length;  // Length of the message
   char *buffer;     // Buffer to hold the message
   uint64_t key;     // Key for encryption
+  int threads;
+char *file_prefix;
 } ClientSocket;
 
 // Structure for server socket information.

@@ -78,7 +78,7 @@ TPTaskResult thread_pool_do(ThreadPool *pool, task_func_t fn, void *arg) {
   pthread_t thread;
   int res = pthread_create(&thread, NULL, task_wrapper, task);
 
-  // res == 0 -> ok
+  // resources == 0 -> ok
   if (res == 0) {
     // ensures that the thread can close on it's own, the join machanism
     // is not required and is implemented manually
@@ -126,7 +126,7 @@ TPTaskResult thread_pool_try_do(ThreadPool *pool, task_func_t fn, void *arg) {
   pthread_t thread;
   int res = pthread_create(&thread, NULL, task_wrapper, task);
 
-  // res == 0 -> ok
+  // resources == 0 -> ok
   if (res == 0) {
     // ensures that the thread can close on it's own, the join machanism
     // is not required and is implemented manually

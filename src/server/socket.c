@@ -11,7 +11,7 @@
 
 ServerSocket *create_server_socket(const char *ip, uint16_t port, uint16_t max_connections) {
   // Create socket
-  ServerSocket *server_socket;
+  ServerSocket *server_socket=malloc(sizeof(ServerSocket));
   server_socket->fd = socket(AF_INET, SOCK_STREAM, 0);
   if (server_socket->fd < 0) {
     perror("Error creating socket");
