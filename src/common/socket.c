@@ -1,15 +1,13 @@
 #include "socket.h"
-#include "message.h"
 
-#include <errno.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 void clear_socket_buffer(Socket *socket) {
   if (socket->buffer) {
@@ -31,7 +29,8 @@ OpResult add_message(Socket *socket, void *message, size_t message_size) {
     socket->buffer_size = message_size;
   } else {
     // Reallocate memory to accommodate the new message
-    void *new_buffer = realloc(socket->buffer, socket->buffer_size + message_size);
+    void *new_buffer =
+        realloc(socket->buffer, socket->buffer_size + message_size);
     if (new_buffer == NULL) {
       fprintf(stderr, "Error reallocating memory for message buffer: ");
       clear_socket_buffer(socket);
@@ -47,7 +46,8 @@ OpResult add_message(Socket *socket, void *message, size_t message_size) {
 
 OpResult send_message(Socket *socket) {
   // Send message length
-  int bytes_write = write(socket->fd, &socket->buffer_size, sizeof(socket->buffer_size));
+  int bytes_write =
+      write(socket->fd, &socket->buffer_size, sizeof(socket->buffer_size));
   if (bytes_write < 0) {
     fprintf(stderr, "Error sending message length: ");
     return OP_ERROR;
@@ -66,7 +66,8 @@ OpResult send_message(Socket *socket) {
 
 OpResult receive_message(Socket *socket) {
   // Receive message length
-  int bytes_read = read(socket->fd, &socket->buffer_size, sizeof(socket->buffer_size));
+  int bytes_read =
+      read(socket->fd, &socket->buffer_size, sizeof(socket->buffer_size));
   if (bytes_read < 0) {
     fprintf(stderr, "Error reading message length: ");
     return OP_ERROR;
@@ -83,8 +84,9 @@ OpResult receive_message(Socket *socket) {
 }
 
 void close_socket(Socket *socket) {
-  if (!socket) return;
-  
+  if (!socket)
+    return;
+
   if (socket->fd >= 0) {
     close(socket->fd);
   }
