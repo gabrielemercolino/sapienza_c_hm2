@@ -1,5 +1,8 @@
 #pragma once
+
 #include "socket.h"
+
+#include <stdint.h>
 
 enum MessageType { ENC_MSG = 0, ACK = 1 };
 
