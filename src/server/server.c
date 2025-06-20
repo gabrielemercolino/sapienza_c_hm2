@@ -1,16 +1,14 @@
-#include "args.h"
-#include "socket.h"
 #include "../common/message.h"
 #include "../common/socket.h"
+#include "args.h"
+#include "socket.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <stdio.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 int main(int argc, char *argv[]) {
   ServerConfig config = {0};
@@ -32,12 +30,14 @@ int main(int argc, char *argv[]) {
          config.file_prefix, config.max_connections);
 
   // Create socket
-  Socket *server_socket = create_server_socket("INADDR_ANY", 8080, config.max_connections);
+  Socket *server_socket =
+      create_server_socket("INADDR_ANY", 8080, config.max_connections);
 
   while (1) {
     printf("Waiting for a connection...\n");
     Socket *client_socket = accept_client_connection(server_socket);
-    if (!client_socket) continue;
+    if (!client_socket)
+      continue;
 
     // Read the message from the client
     clear_socket_buffer(client_socket);
@@ -48,15 +48,8 @@ int main(int argc, char *argv[]) {
     }
     Message message = get_message(client_socket);
 
-
-
-
     /* decription */
-    
 
-
-
-    
     // Send acknowledgment back to the client
     if (1) {
       // If all goes well
