@@ -1,5 +1,6 @@
 #include "args.h"
 #include "get_text.h"
+#include "socket.h"
 #include "../common/message.h"
 #include "../common/socket.h"
 

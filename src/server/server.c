@@ -1,4 +1,5 @@
 #include "args.h"
+#include "socket.h"
 #include "../common/message.h"
 #include "../common/socket.h"
 
