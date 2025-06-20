@@ -1,5 +1,6 @@
 #include "args.h"
-#include "socket.h"
+#include "../common/message.h"
+#include "../common/socket.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,20 +31,21 @@ int main(int argc, char *argv[]) {
          config.file_prefix, config.max_connections);
 
   // Create socket
-  ServerSocket *server_socket = create_server_socket("INADDR_ANY", 8080, config.max_connections);
+  Socket *server_socket = create_server_socket("INADDR_ANY", 8080, config.max_connections);
 
   while (1) {
     printf("Waiting for a connection...\n");
-    ClientSocket *client_socket = accept_client_connection(server_socket);
+    Socket *client_socket = accept_client_connection(server_socket);
     if (!client_socket) continue;
-    
 
     // Read the message from the client
-    int b_read = read_message(client_socket);
+    clear_socket_buffer(client_socket);
+    int b_read = receive_message(client_socket);
     if (b_read < 0) {
-      close_client_socket(client_socket);
+      close_socket(client_socket);
       continue;
     }
+    Message message = get_message(client_socket);
 
 
 
@@ -55,16 +57,20 @@ int main(int argc, char *argv[]) {
 
     
     // Send acknowledgment back to the client
-    uint16_t ack = 0;
-    int b_write = send_ack(client_socket, ack);
-    if (b_write < 0) {
-      close_client_socket(client_socket);
-      continue;
+    if (1) {
+      // If all goes well
+      enum MessageType msg_type = ACK;
+      enum AckType ack_type = ACK_OK;
+      clear_socket_buffer(client_socket);
+      add_message(client_socket, &msg_type, sizeof(enum MessageType));
+      add_message(client_socket, &ack_type, sizeof(enum AckType));
+
+      send_message(client_socket);
     }
 
     // Close the client socket
-    close_client_socket(client_socket);
-    sleep(1);
+    close_socket(client_socket);
+    sleep(100);
   }
   return 0;
 }
