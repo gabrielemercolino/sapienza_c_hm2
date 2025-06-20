@@ -1,5 +1,4 @@
 #pragma once
-#include <stdint.h>
 #include <stddef.h>
 
 // Structure for socket information.
