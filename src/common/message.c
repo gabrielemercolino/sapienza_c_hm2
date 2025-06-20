@@ -16,13 +16,17 @@ Message get_message(Socket *socket) {
   enum MessageType msg_type = (enum MessageType) * cursor;
   cursor += sizeof(enum MessageType);
 
+  const size_t min_message_size = sizeof(enum MessageType) +
+                                  sizeof(message.enc_len) +
+                                  sizeof(message.org_len);
+
   // Check msg type
   if (msg_type != ENC_MSG) {
     fprintf(stderr, "Expect a message\n");
     free(message.msg);
     message.msg = NULL;
     return message;
-  } else if (socket->buffer_size < 1 + sizeof(uint16_t) * 2) {
+  } else if (socket->buffer_size < min_message_size) {
     fprintf(stderr, "Incomplete message");
     free(message.msg);
     message.msg = NULL;
@@ -30,14 +34,15 @@ Message get_message(Socket *socket) {
   }
 
   // Read original length
-  memcpy(&message.org_len, cursor, sizeof(uint16_t));
-  cursor += sizeof(uint16_t);
+  memcpy(&message.org_len, cursor, sizeof(message.org_len));
+  cursor += sizeof(message.org_len);
 
   // Read encrypted length
-  memcpy(&message.enc_len, cursor, sizeof(uint16_t));
-  cursor += sizeof(uint16_t);
+  memcpy(&message.enc_len, cursor, sizeof(message.enc_len));
+  cursor += sizeof(message.enc_len);
+
   if (socket->buffer_size <
-      1 + sizeof(uint16_t) * 2 + sizeof(uint64_t) + message.enc_len) {
+      min_message_size + message.enc_len + sizeof(message.key)) {
     fprintf(stderr, "Incomplete message\n");
     free(message.msg);
     message.msg = NULL;
@@ -47,10 +52,14 @@ Message get_message(Socket *socket) {
   // Read encrypted message
   message.msg = malloc(message.enc_len);
   memcpy(message.msg, cursor, message.enc_len);
-  cursor += message.enc_len;
+  cursor += sizeof(message.enc_len);
 
   // Read key
-  memcpy(&message.key, cursor, sizeof(uint64_t));
+  memcpy(&message.key, cursor, sizeof(message.key));
+  cursor += sizeof(message.key);
+
+  // Read threads
+  memcpy(&message.threads, cursor, sizeof(message.threads));
 
   // Print
   printf("Original Length: %hu\n", message.org_len);
