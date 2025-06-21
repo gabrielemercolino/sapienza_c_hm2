@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "client/encryption.h"
+#include "client/get_text.h"
 #include "server/decrypt.h"
 
 #define BLOCK_SIZE 8
@@ -14,28 +15,35 @@ static uint64_t parse_key(const char *str);
 
 int main() {
   const char *filename = "tests/test.txt";
+
+  char *original = get_text(filename);
+
   uint64_t key = parse_key("emiliano");
   size_t threads = 3;
-  size_t length, padding_length;
+  size_t padded_len;
 
-  char *cipher = encrypt_file(filename, key, &length, &padding_length, threads);
+  char *cipher = encrypt_file(filename, key, &padded_len, threads);
 
-  printf("length:%zu\n", length);
+  printf("length:%zu\n", padded_len);
 
   // stampa carattere per carattere
   // siccome la cifratura potrebbe
   // aggiungere dei caratteri speciali
   // come '/0'
   printf("\"");
-  for (size_t i = 0; i < length / 8; i++) {
+  for (size_t i = 0; i < padded_len / 8; i++) {
     printf("%c", cipher[i]);
   }
   printf("\"\n");
 
-  char *decripted =
-      decrypt_message(cipher, length + padding_length, key, threads);
+  char *decripted = decrypt_message(cipher, padded_len, key, threads);
 
-  printf("decripted=\"%s\"\n", decripted);
+  if (strcmp(decripted, original) != 0) {
+    printf("decripted=\"%s\"\n", decripted);
+    free(cipher);
+    free(decripted);
+    return 1;
+  }
 
   free(cipher);
   free(decripted);

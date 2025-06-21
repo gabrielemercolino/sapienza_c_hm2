@@ -1,122 +1,121 @@
 #include "args.h"
+#include "common/message.h"
+#include "common/thread_pool.h"
+#include "server/decrypt.h"
 #include "socket.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-
-#include "decrypt.h"
-#include "common/thread_pool.h"
-
-
 #include <time.h>
+#include <unistd.h>
 
-void handle_client(void *arg) {
-    ClientSocket *client_socket = (ClientSocket *) arg;
+typedef struct {
+  Socket *client_socket;
+  Message *message;
 
-    if (read_message(client_socket) < 0) {
-        close_client_socket(client_socket);
-        free(client_socket);
-        return;
-    }
-    ///qui decifrazione, mancano argomenti
-    char *decrypt_text=decrypt_message(client_socket->buffer, client_socket->length, client_socket->key, client_socket->threads );
+  char *file_prefix;
+} ClientHandle;
 
+void handle_client(ClientHandle *handle) {
+  Message *message = handle->message;
 
-    //write file with padding. Puo essere estratto nella funzione separata
+  size_t padding_length = message->encrypted_len - message->original_len;
+  char *decrypted_text = decrypt_message(
+      message->encrypted_text, padding_length, message->key, message->threads);
 
+  // write file with padding. Può essere estratto nella funzione separata
+  time_t now = time(NULL);
+  struct tm *tm_info = localtime(&now);
+  char buffer[30];
+  strftime(buffer, sizeof(buffer), "%Y-%m-%d_%H:%M:%S", tm_info);
 
-    time_t now = time(NULL);
-    struct tm *tm_info = localtime(&now);
-    char buffer[30];
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d_%H:%M:%S", tm_info);
+  char *fname = strcat(handle->file_prefix, buffer);
 
-    char*fname=strcat(client_socket->file_prefix, buffer);
+  FILE *fout = fopen("../../resources/", "w");
+  if (fout == NULL) {
+    perror("fopen fail");
+  }
+  fputs(decrypted_text, fout);
 
+  fclose(fout);
+  free(decrypted_text);
+  free(fname);
 
-    char *fpath=strcat("../../resources/", fname);
-    FILE *fout=fopen("../../resources/","w");
-    if (fout==NULL) {
-        perror("fopen fail");
-    }
-    fputs(decrypt_text, fout);
-    fclose(fout);
-    free(decrypt_text);
-    free(fname);
-    free(client_socket);
+  enum MessageType msg_type = ACK;
+  enum AckType ack_type = ACK_OK;
+  clear_socket_buffer(handle->client_socket);
+  add_message(handle->client_socket, &msg_type, sizeof(enum MessageType));
+  add_message(handle->client_socket, &ack_type, sizeof(enum AckType));
 
-
-
-    // Send acknowledgment back to the client
-    int b_write = send_ack(client_socket);
-    if (b_write < 0) {
-        close_client_socket(client_socket);
-        free(client_socket);
-        return;
-    }
-    close_client_socket(client_socket);
-    free(client_socket);
-
+  send_message(handle->client_socket);
+  close_socket(handle->client_socket);
 }
 
+void handle_client_task(void *arg) {
+  ClientHandle *handle = arg;
 
+  handle_client(handle);
 
-
+  free(arg);
+}
 
 int main(int argc, char *argv[]) {
-    ServerConfig config = {0};
-    SPAResult result = server_parse_args(argc, argv, &config);
+  ServerConfig config = {0};
+  SPAResult result = server_parse_args(argc, argv, &config);
 
-    if (result == ONLY_HELP) {
-        server_print_usage(argv[0]);
-        return 0;
-    }
-
-    if (result != OK) {
-        fprintf(stderr, "%s\n", server_pa_result_to_string(result));
-        server_print_usage(argv[0]);
-        return 1;
-    }
-
-    printf("Hello form server\n");
-    printf("Config:\n  -t: %lu\n  -p: '%s'\n  -c: %d\n", config.threads,
-           config.file_prefix, config.max_connections);
-
-    // Create socket
-    ServerSocket *server_socket = create_server_socket("INADDR_ANY", 8080, config.max_connections);
-    ThreadPool *pool = create_thread_pool(config.max_connections);
-
-    while (1) {
-        printf("Waiting for a connection...\n");
-        ClientSocket *client_socket = accept_client_connection(server_socket);
-        if (!client_socket || client_socket->fd < 0) continue;
-
-        //inizio E
-
-        ClientSocket *client_arg = malloc(sizeof(ClientSocket));
-        client_socket->threads=config.threads;
-        client_socket->file_prefix=config.file_prefix;
-
-
-        TPTaskResult r = thread_pool_try_do(pool, handle_client, client_arg);
-        if (r != OK) {
-            printf("Thread pool pieno. Connessione rifiutata.\n");
-            close_client_socket(client_arg);
-            free(client_arg);
-            continue;
-        }
-        //fine E
-
-
-    }
-
-    printf("Chiusura server...\n");
-    thread_pool_join(pool);
-    thread_pool_free(pool);
+  if (result == ONLY_HELP) {
+    server_print_usage(argv[0]);
     return 0;
+  }
+
+  if (result != OK) {
+    fprintf(stderr, "%s\n", server_pa_result_to_string(result));
+    server_print_usage(argv[0]);
+    return 1;
+  }
+
+  printf("Hello form server\n");
+  printf("Config:\n  -t: %lu\n  -p: '%s'\n  -c: %d\n", config.threads,
+         config.file_prefix, config.max_connections);
+
+  // Create socket
+  Socket *server_socket =
+      create_server_socket("INADDR_ANY", 8080, config.max_connections);
+
+  ThreadPool *pool = create_thread_pool(config.max_connections);
+
+  while (1) {
+    printf("Waiting for a connection...\n");
+    Socket *client_socket = accept_client_connection(server_socket);
+    if (!client_socket)
+      continue;
+
+    // Read the message from the client
+    clear_socket_buffer(client_socket);
+    int b_read = receive_message(client_socket);
+    if (b_read < 0) {
+      close_socket(client_socket);
+      continue;
+    }
+
+    ClientHandle *handle = malloc(sizeof(ClientHandle));
+    handle->message = get_message(client_socket);
+    handle->client_socket = client_socket;
+    handle->file_prefix = config.file_prefix;
+
+    if (thread_pool_try_do(pool, handle_client_task, handle) != STARTED) {
+      enum MessageType msg_type = ACK;
+      enum AckType ack_type = ACK_POOL_FAILED;
+      clear_socket_buffer(client_socket);
+      add_message(client_socket, &msg_type, sizeof(enum MessageType));
+      add_message(client_socket, &ack_type, sizeof(enum AckType));
+
+      send_message(client_socket);
+      close_socket(client_socket);
+    }
+
+    sleep(100);
+  }
+  return 0;
 }

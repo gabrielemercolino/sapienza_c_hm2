@@ -1,15 +1,11 @@
 #include "args.h"
+#include "client/encryption.h"
+#include "common/message.h"
 #include "get_text.h"
 #include "socket.h"
 
-#include "client.h"
-
-#include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-
-#include "encryption.h"
 
 int main(int argc, char *argv[]) {
   ClientConfig config = {0};
@@ -32,45 +28,64 @@ int main(int argc, char *argv[]) {
          config.server_port);
 
   // Create socket
-  ClientSocket *client_socket =
-      create_socket(config.server_ip, config.server_port);
+  Socket *client_socket =
+      create_client_socket(config.server_ip, config.server_port);
   if (client_socket->fd < 0) {
     close_socket(client_socket);
     return 1;
   }
 
   // Get file text
-  // char *text = get_text(config.file_path);
-  // size_t length = strlen(text);
+  char *text = get_text(config.file_path);
+  size_t original_len = strlen(text);
 
-  /* encryption */
-
-  // inizio parte E
-  size_t out_len;
-  size_t padding_len;
-  char *ciphertext = encrypt_file(config.file_path, config.key, &out_len,
-                                  &padding_len, config.threads);
-
-  // fine parte E
-
-  size_t length = strlen(ciphertext);
+  // the ciphered text can have '/0' inside and that would make
+  // strlen function not work properly
+  size_t ciphered_len;
+  char *ciphered_text =
+      encrypt_file(config.file_path, config.key, &ciphered_len, config.threads);
 
   // Send message to the server
-  int b_send = send_message(client_socket, length, ciphertext, config.key);
+  clear_socket_buffer(client_socket);
+  enum MessageType msg_type = ENC_MSG;
+  add_message(client_socket, &msg_type, sizeof(enum MessageType));
+  add_message(client_socket, &original_len, sizeof(original_len));
+  add_message(client_socket, &ciphered_len, sizeof(ciphered_len));
+  add_message(client_socket, ciphered_text, ciphered_len);
+  add_message(client_socket, &config.key, sizeof(config.key));
+  add_message(client_socket, &config.threads, sizeof(config.threads));
+
+  int b_send = send_message(client_socket);
   if (b_send < 0) {
     close_socket(client_socket);
     return 1;
   }
 
-  // Receive ack from the server
-  char ack_buffer[64];
-  int b_read = receive_ack(client_socket, ack_buffer, 64);
+  // Receive msg from the server
+  clear_socket_buffer(client_socket);
+  int b_read = receive_message(client_socket);
   if (b_read < 0) {
     close_socket(client_socket);
     return 1;
   }
 
+  // Process ack received
+  enum AckType ack_type = get_ack_type(client_socket);
+
+  // Take action based on received ack
+  int flag = 1;
+  if (ack_type == ACK_OK) {
+    flag = 0;
+    printf("OK\n");
+  } else if (ack_type == ACK_ERROR) {
+    fprintf(stderr, "Error\n");
+  } else if (ack_type == ACK_POOL_FAILED) {
+    fprintf(stderr, "Error creating thread pool\n");
+  } else {
+    fprintf(stderr, "Unknow ack type\n");
+  }
+
   // Close connection
   close_socket(client_socket);
-  return 0;
+  return flag;
 }
