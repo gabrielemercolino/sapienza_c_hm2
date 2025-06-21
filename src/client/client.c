@@ -54,16 +54,16 @@ int main(int argc, char *argv[]) {
   add_message(client_socket, &config.key, sizeof(config.key));
   add_message(client_socket, encrypted_text, encrypted_len / 8);
 
-  int b_send = send_message(client_socket);
-  if (b_send < 0) {
+  OpResult res = send_message(client_socket);
+  if (res == OP_ERROR) {
     close_socket(client_socket);
     return 1;
   }
 
   // Receive msg from the server
   clear_socket_buffer(client_socket);
-  int b_read = receive_message(client_socket);
-  if (b_read < 0) {
+  res = receive_message(client_socket);
+  if (res == OP_ERROR) {
     close_socket(client_socket);
     return 1;
   }

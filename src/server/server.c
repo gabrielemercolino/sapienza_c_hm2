@@ -101,8 +101,8 @@ int main(int argc, char *argv[]) {
 
     // Read the message from the client
     clear_socket_buffer(client_socket);
-    int b_read = receive_message(client_socket);
-    if (b_read < 0) {
+    OpResult res = receive_message(client_socket);
+    if (res == OP_ERROR) {
       close_socket(client_socket);
       continue;
     }
