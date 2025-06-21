@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
   while (1) {
     printf("Waiting for a connection...\n");
     Socket *client_socket = accept_client_connection(server_socket);
-    if (client_socket == NULL)
+    if (!client_socket)
       continue;
 
     // Read the message from the client
