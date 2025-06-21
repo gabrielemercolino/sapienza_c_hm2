@@ -1,13 +1,8 @@
 #include "message.h"
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 Message *get_message(Socket *socket) {
   Message *message = malloc(sizeof(Message));
@@ -17,42 +12,42 @@ Message *get_message(Socket *socket) {
   cursor += sizeof(enum MessageType);
 
   const size_t min_message_size = sizeof(enum MessageType) +
-                                  sizeof(message->enc_len) +
-                                  sizeof(message->org_len);
+                                  sizeof(message->encrypted_len) +
+                                  sizeof(message->original_len);
 
   // Check msg type
   if (msg_type != ENC_MSG) {
     fprintf(stderr, "Expect a message\n");
-    free(message->msg);
-    message->msg = NULL;
+    free(message->encrypted_text);
+    message->encrypted_text = NULL;
     return message;
   } else if (socket->buffer_size < min_message_size) {
     fprintf(stderr, "Incomplete message");
-    free(message->msg);
-    message->msg = NULL;
+    free(message->encrypted_text);
+    message->encrypted_text = NULL;
     return message;
   }
 
   // Read original length
-  memcpy(&message->org_len, cursor, sizeof(message->org_len));
-  cursor += sizeof(message->org_len);
+  memcpy(&message->original_len, cursor, sizeof(message->original_len));
+  cursor += sizeof(message->original_len);
 
   // Read encrypted length
-  memcpy(&message->enc_len, cursor, sizeof(message->enc_len));
-  cursor += sizeof(message->enc_len);
+  memcpy(&message->encrypted_len, cursor, sizeof(message->encrypted_len));
+  cursor += sizeof(message->encrypted_len);
 
   if (socket->buffer_size <
-      min_message_size + message->enc_len + sizeof(message->key)) {
+      min_message_size + message->encrypted_len + sizeof(message->key)) {
     fprintf(stderr, "Incomplete message\n");
-    free(message->msg);
-    message->msg = NULL;
+    free(message->encrypted_text);
+    message->encrypted_text = NULL;
     return message;
   }
 
   // Read encrypted message
-  message->msg = malloc(message->enc_len);
-  memcpy(message->msg, cursor, message->enc_len);
-  cursor += sizeof(message->enc_len);
+  message->encrypted_text = malloc(message->encrypted_len);
+  memcpy(message->encrypted_text, cursor, message->encrypted_len);
+  cursor += sizeof(message->encrypted_len);
 
   // Read key
   memcpy(&message->key, cursor, sizeof(message->key));
@@ -62,8 +57,8 @@ Message *get_message(Socket *socket) {
   memcpy(&message->threads, cursor, sizeof(message->threads));
 
   // Print
-  printf("Original Length: %hu\n", message->org_len);
-  printf("Encrypted length: %hu\n", message->enc_len);
+  printf("Original Length: %zu\n", message->original_len);
+  printf("Encrypted length: %zu\n", message->encrypted_len);
   printf("Key: %lu\n", message->key);
 
   return message;
