@@ -5,7 +5,7 @@
 }:
 stdenv.mkDerivation rec {
   name = "client";
-  pversion = "0.0.1";
+  pversion = "0.9";
 
   src = ./.;
 
