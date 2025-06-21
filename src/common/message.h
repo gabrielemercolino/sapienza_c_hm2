@@ -14,11 +14,11 @@ enum AckType {
 };
 
 typedef struct {
-  uint16_t org_len; // Length of the original message
-  uint16_t enc_len; // Length of the encrypted message
-  char *msg;        // Pointer to the message data
-  uint64_t key;     // Key for encryption/decryption
-  size_t threads;   // Number of threads for decryption
+  size_t original_len;  // Length of the original message
+  size_t encrypted_len; // Length of the encrypted message
+  char *encrypted_text; // Pointer to the message data
+  uint64_t key;         // Key for encryption/decryption
+  size_t threads;       // Number of threads for decryption
 } Message;
 
 /**
