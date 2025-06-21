@@ -17,30 +17,37 @@ typedef struct {
   char *file_prefix;
 } ClientHandle;
 
+void generate_filename(char *buffer, size_t buffer_size, const char *prefix);
+
 void handle_client(ClientHandle *handle) {
   Message *message = handle->message;
 
-  size_t padding_length = message->encrypted_len - message->original_len;
-  char *decrypted_text = decrypt_message(
-      message->encrypted_text, padding_length, message->key, message->threads);
+  char *decrypted_text =
+      decrypt_message(message->encrypted_text, message->encrypted_len,
+                      message->key, message->threads);
 
-  // write file with padding. Può essere estratto nella funzione separata
-  time_t now = time(NULL);
-  struct tm *tm_info = localtime(&now);
-  char buffer[30];
-  strftime(buffer, sizeof(buffer), "%Y-%m-%d_%H:%M:%S", tm_info);
+  char fname[strlen(handle->file_prefix) + 32];
+  generate_filename(fname, sizeof(fname), handle->file_prefix);
 
-  char *fname = strcat(handle->file_prefix, buffer);
-
-  FILE *fout = fopen("../../resources/", "w");
+  FILE *fout = fopen(fname, "w");
   if (fout == NULL) {
     perror("fopen fail");
+
+    enum MessageType msg_type = ACK;
+    enum AckType ack_type = ACK_ERROR;
+
+    clear_socket_buffer(handle->client_socket);
+    add_message(handle->client_socket, &msg_type, sizeof(enum MessageType));
+    add_message(handle->client_socket, &ack_type, sizeof(enum AckType));
+
+    send_message(handle->client_socket);
+    close_socket(handle->client_socket);
   }
+
   fputs(decrypted_text, fout);
 
   fclose(fout);
   free(decrypted_text);
-  free(fname);
 
   enum MessageType msg_type = ACK;
   enum AckType ack_type = ACK_OK;
@@ -99,8 +106,21 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
+    Message *message = get_message(client_socket);
+    if (message == NULL) {
+      enum MessageType msg_type = ACK;
+      enum AckType ack_type = ACK_ERROR;
+
+      clear_socket_buffer(client_socket);
+      add_message(client_socket, &msg_type, sizeof(enum MessageType));
+      add_message(client_socket, &ack_type, sizeof(enum AckType));
+
+      send_message(client_socket);
+      close_socket(client_socket);
+    }
+
     ClientHandle *handle = malloc(sizeof(ClientHandle));
-    handle->message = get_message(client_socket);
+    handle->message = message;
     handle->client_socket = client_socket;
     handle->file_prefix = config.file_prefix;
 
@@ -114,8 +134,16 @@ int main(int argc, char *argv[]) {
       send_message(client_socket);
       close_socket(client_socket);
     }
-
-    sleep(100);
   }
   return 0;
+}
+
+void generate_filename(char *buffer, size_t buffer_size, const char *prefix) {
+  time_t now = time(NULL);
+  struct tm *tm_info = localtime(&now);
+
+  char time_str[32];
+  strftime(time_str, sizeof(time_str), "%Y%m%d_%H%M%S", tm_info);
+
+  snprintf(buffer, buffer_size, "%s%s.txt", prefix, time_str);
 }
