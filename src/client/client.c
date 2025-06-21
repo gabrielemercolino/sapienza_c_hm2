@@ -41,19 +41,19 @@ int main(int argc, char *argv[]) {
 
   // the ciphered text can have '/0' inside and that would make
   // strlen function not work properly
-  size_t ciphered_len;
-  char *ciphered_text =
-      encrypt_file(config.file_path, config.key, &ciphered_len, config.threads);
+  size_t encrypted_len;
+  char *encrypted_text = encrypt_file(config.file_path, config.key,
+                                      &encrypted_len, config.threads);
 
   // Send message to the server
   clear_socket_buffer(client_socket);
   enum MessageType msg_type = ENC_MSG;
   add_message(client_socket, &msg_type, sizeof(enum MessageType));
   add_message(client_socket, &original_len, sizeof(original_len));
-  add_message(client_socket, &ciphered_len, sizeof(ciphered_len));
-  add_message(client_socket, ciphered_text, ciphered_len);
+  add_message(client_socket, &encrypted_len, sizeof(encrypted_len));
   add_message(client_socket, &config.key, sizeof(config.key));
   add_message(client_socket, &config.threads, sizeof(config.threads));
+  add_message(client_socket, encrypted_text, encrypted_len);
 
   int b_send = send_message(client_socket);
   if (b_send < 0) {
