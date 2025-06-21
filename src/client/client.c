@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
   add_message(client_socket, &original_len, sizeof(original_len));
   add_message(client_socket, &encrypted_len, sizeof(encrypted_len));
   add_message(client_socket, &config.key, sizeof(config.key));
-  add_message(client_socket, encrypted_text, encrypted_len);
+  add_message(client_socket, encrypted_text, encrypted_len / 8);
 
   int b_send = send_message(client_socket);
   if (b_send < 0) {

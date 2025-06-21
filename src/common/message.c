@@ -36,14 +36,14 @@ Message *get_message(Socket *socket) {
   memcpy(&message->key, cursor, sizeof(message->key));
   cursor += sizeof(message->key);
 
-  if (socket->buffer_size < min_message_size + message->encrypted_len) {
+  if (socket->buffer_size != (min_message_size + message->encrypted_len / 8)) {
     fprintf(stderr, "Incomplete message");
     return NULL;
   }
 
   // Read encrypted message
-  message->encrypted_text = calloc(1, message->encrypted_len);
-  memcpy(message->encrypted_text, cursor, message->encrypted_len);
+  message->encrypted_text = calloc(1, message->encrypted_len / 8);
+  memcpy(message->encrypted_text, cursor, message->encrypted_len / 8);
 
   return message;
 }
