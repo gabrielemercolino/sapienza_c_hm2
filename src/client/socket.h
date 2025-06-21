@@ -1,5 +1,7 @@
 #pragma once
-#include "../common/socket.h"
+#include "common/socket.h"
+
+#include <stdint.h>
 
 /**
  * @brief Create a client socket and connect to the server.
