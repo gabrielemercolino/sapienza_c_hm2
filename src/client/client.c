@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
   // Get file text
   char *text = get_text(config.file_path);
-  size_t original_len = strlen(text);
+  size_t original_len = strlen(text) * 8;
 
   // the ciphered text can have '/0' inside and that would make
   // strlen function not work properly
