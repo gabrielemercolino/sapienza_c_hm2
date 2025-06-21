@@ -15,6 +15,7 @@ typedef struct {
   Message *message;
 
   char *file_prefix;
+  size_t threads;
 } ClientHandle;
 
 void generate_filename(char *buffer, size_t buffer_size, const char *prefix);
@@ -24,7 +25,7 @@ void handle_client(ClientHandle *handle) {
 
   char *decrypted_text =
       decrypt_message(message->encrypted_text, message->encrypted_len,
-                      message->key, message->threads);
+                      message->key, handle->threads);
 
   char fname[strlen(handle->file_prefix) + 32];
   generate_filename(fname, sizeof(fname), handle->file_prefix);
@@ -123,6 +124,7 @@ int main(int argc, char *argv[]) {
     handle->message = message;
     handle->client_socket = client_socket;
     handle->file_prefix = config.file_prefix;
+    handle->threads = config.threads;
 
     if (thread_pool_try_do(pool, handle_client_task, handle) != STARTED) {
       enum MessageType msg_type = ACK;

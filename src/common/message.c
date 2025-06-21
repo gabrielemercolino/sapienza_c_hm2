@@ -13,8 +13,7 @@ Message *get_message(Socket *socket) {
 
   const size_t min_message_size =
       sizeof(enum MessageType) + sizeof(message->original_len) +
-      sizeof(message->encrypted_len) + sizeof(message->key) +
-      sizeof(message->threads);
+      sizeof(message->encrypted_len) + sizeof(message->key);
 
   // Check msg type
   if (msg_type != ENC_MSG) {
@@ -36,10 +35,6 @@ Message *get_message(Socket *socket) {
   // Read key
   memcpy(&message->key, cursor, sizeof(message->key));
   cursor += sizeof(message->key);
-
-  // Read threads
-  memcpy(&message->threads, cursor, sizeof(message->threads));
-  cursor += sizeof(message->threads);
 
   if (socket->buffer_size < min_message_size + message->encrypted_len) {
     fprintf(stderr, "Incomplete message");
