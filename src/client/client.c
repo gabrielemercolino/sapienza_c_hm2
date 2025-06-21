@@ -1,11 +1,10 @@
 #include "args.h"
+#include "client/encryption.h"
+#include "common/message.h"
 #include "get_text.h"
 #include "socket.h"
-#include "../common/message.h"
-#include "../common/socket.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 int main(int argc, char *argv[]) {
@@ -29,7 +28,8 @@ int main(int argc, char *argv[]) {
          config.server_port);
 
   // Create socket
-  Socket *client_socket = create_client_socket(config.server_ip, config.server_port);
+  Socket *client_socket =
+      create_client_socket(config.server_ip, config.server_port);
   if (client_socket->fd < 0) {
     close_socket(client_socket);
     return 1;
@@ -37,26 +37,24 @@ int main(int argc, char *argv[]) {
 
   // Get file text
   char *text = get_text(config.file_path);
-  uint16_t org_length = strlen(text);
+  size_t original_len = strlen(text);
 
+  // the ciphered text can have '/0' inside and that would make
+  // strlen function not work properly
+  size_t ciphered_len;
+  char *ciphered_text =
+      encrypt_file(config.file_path, config.key, &ciphered_len, config.threads);
 
-
-
-  /* encryption */
-
-
-
-  
-
-  uint16_t enc_length = org_length;
   // Send message to the server
   clear_socket_buffer(client_socket);
   enum MessageType msg_type = ENC_MSG;
   add_message(client_socket, &msg_type, sizeof(enum MessageType));
-  add_message(client_socket, &org_length, sizeof(uint16_t));
-  add_message(client_socket, &enc_length, sizeof(uint16_t));
-  add_message(client_socket, text, enc_length);
-  add_message(client_socket, &config.key, sizeof(uint64_t));
+  add_message(client_socket, &original_len, sizeof(original_len));
+  add_message(client_socket, &ciphered_len, sizeof(ciphered_len));
+  add_message(client_socket, ciphered_text, ciphered_len);
+  add_message(client_socket, &config.key, sizeof(config.key));
+  add_message(client_socket, &config.threads, sizeof(config.threads));
+
   int b_send = send_message(client_socket);
   if (b_send < 0) {
     close_socket(client_socket);
