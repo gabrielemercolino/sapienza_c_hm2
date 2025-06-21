@@ -1,6 +1,5 @@
 #include "args.h"
 #include "common/message.h"
-#include "common/socket.h"
 #include "common/thread_pool.h"
 #include "server/decrypt.h"
 #include "socket.h"
