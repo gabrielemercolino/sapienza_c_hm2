@@ -12,6 +12,13 @@
 
 #define BLOCK_SIZE 64
 
+typedef struct {
+  char *plaintext;
+  char *ciphertext;
+  size_t index;
+  uint64_t key;
+} DecryptTask;
+
 void decrypt_block(void *arg) {
   DecryptTask *task = (DecryptTask *)arg;
   uint64_t *plaintext = (uint64_t *)task->plaintext;
@@ -54,7 +61,7 @@ char *decrypt_message(char *ciphertext, size_t padded_len, uint64_t key,
     task->index = i;
     task->key = key;
 
-    if (thread_pool_do(pool, decrypt_block, task) != OK) {
+    if (thread_pool_do(pool, decrypt_block, task) != STARTED) {
       fprintf(stderr, "Error theadpool decrypt task %zu\n", i);
       free(task);
     }
