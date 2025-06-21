@@ -1,16 +1,13 @@
 #include "socket.h"
 
-#include <errno.h>
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 
-Socket *create_server_socket(const char *ip, uint16_t port, uint16_t max_connections) {
+Socket *create_server_socket(const char *ip, uint16_t port,
+                             uint16_t max_connections) {
   // Create socket
   Socket *server_socket = malloc(sizeof(Socket));
   server_socket->fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -37,7 +34,8 @@ Socket *create_server_socket(const char *ip, uint16_t port, uint16_t max_connect
   }
 
   // Bind the socket to the address
-  if (bind(server_socket->fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+  if (bind(server_socket->fd, (struct sockaddr *)&serv_addr,
+           sizeof(serv_addr)) < 0) {
     perror("Error binding socket");
     close(server_socket->fd);
     server_socket->fd = -1;
