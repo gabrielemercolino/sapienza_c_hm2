@@ -5,7 +5,7 @@
 
 typedef struct {
   uint64_t threads;
-  const char *file_prefix;
+  char *file_prefix;
   uint16_t max_connections;
 } ServerConfig;
 

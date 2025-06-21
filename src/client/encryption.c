@@ -2,12 +2,11 @@
 // Created by Pc on 13.06.2025.
 //
 #include <signal.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "../common/thread_pool.h"
+#include "common/thread_pool.h"
 #include "encryption.h"
 #include "get_text.h"
 
@@ -32,7 +31,7 @@ void xor_encrypt_block(void *arg) {
 static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
 
 char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
-                   size_t *padding_len, size_t threads) {
+                   size_t threads) {
   // blocca solo i segnali specificati
   signal(SIGINT, signal_handler);
   signal(SIGALRM, signal_handler);
@@ -47,16 +46,14 @@ char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
 
   // Calcolo lunghezza e padding
   size_t length = strlen(text) * 8;
-  *out_len = length;
 
   size_t padding = BLOCK_SIZE - (length % BLOCK_SIZE);
   if (padding == BLOCK_SIZE) {
     padding = 0;
   }
 
-  *padding_len = padding;
-
   size_t padded_len = length + padding;
+  *out_len = padded_len;
   size_t num_blocks = padded_len / BLOCK_SIZE;
 
   char *padded_text = calloc(1, padded_len); // auto padding con '\0'
@@ -78,7 +75,7 @@ char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
     task->index = i;
     task->key = key;
 
-    if (thread_pool_do(pool, xor_encrypt_block, task) != OK) {
+    if (thread_pool_do(pool, xor_encrypt_block, task) != STARTED) {
       fprintf(stderr, "Error theadpool encrypt task %zu\n", i);
       free(task);
     }

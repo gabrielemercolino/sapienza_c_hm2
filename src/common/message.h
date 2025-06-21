@@ -1,10 +1,10 @@
 #pragma once
+
 #include "socket.h"
 
-enum MessageType {
-  ENC_MSG = 0,
-  ACK = 1
-};
+#include <stdint.h>
+
+enum MessageType { ENC_MSG = 0, ACK = 1 };
 
 enum AckType {
   ACK_UNKNOWN = -1,
@@ -14,18 +14,19 @@ enum AckType {
 };
 
 typedef struct {
-  uint16_t org_len;      // Length of the original message
-  uint16_t enc_len;      // Length of the encrypted message
-  void *msg;             // Pointer to the message data
-  uint64_t key;          // Key for encryption/decryption
+  size_t original_len;  // Length of the original message
+  size_t encrypted_len; // Length of the encrypted message
+  char *encrypted_text; // Pointer to the message data
+  uint64_t key;         // Key for encryption/decryption
+  size_t threads;       // Number of threads for decryption
 } Message;
 
 /**
  * @brief Get message in the buffer.
  * @param socket Socket which contains message.
- * @return message structure.
+ * @return pointer to message structure.
  */
-Message get_message(Socket *socket);
+Message *get_message(Socket *socket);
 
 /**
  * @brief Get ack in the buffer.
