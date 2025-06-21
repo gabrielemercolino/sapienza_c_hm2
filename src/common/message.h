@@ -24,9 +24,9 @@ typedef struct {
 /**
  * @brief Get message in the buffer.
  * @param socket Socket which contains message.
- * @return message structure.
+ * @return pointer to message structure.
  */
-Message get_message(Socket *socket);
+Message *get_message(Socket *socket);
 
 /**
  * @brief Get ack in the buffer.
