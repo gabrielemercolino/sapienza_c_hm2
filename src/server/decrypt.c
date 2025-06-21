@@ -67,5 +67,13 @@ char *decrypt_message(char *ciphertext, size_t padded_len, uint64_t key,
   thread_pool_join(pool);
   thread_pool_free(pool);
 
+  
+  // Ripristinare handler originali
+  signal(SIGINT, SIG_DFL);
+  signal(SIGALRM, SIG_DFL);
+  signal(SIGUSR1, SIG_DFL);
+  signal(SIGUSR2, SIG_DFL);
+  signal(SIGTERM, SIG_DFL);
+
   return output;
 }

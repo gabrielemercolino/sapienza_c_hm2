@@ -85,5 +85,13 @@ char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
   thread_pool_free(pool);
 
   free(padded_text);
+
+  // Ripristinare handler originali
+  signal(SIGINT, SIG_DFL);
+  signal(SIGALRM, SIG_DFL);
+  signal(SIGUSR1, SIG_DFL);
+  signal(SIGUSR2, SIG_DFL);
+  signal(SIGTERM, SIG_DFL);
+  
   return ciphertext;
 }
