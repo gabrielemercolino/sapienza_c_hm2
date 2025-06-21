@@ -15,7 +15,7 @@ Socket *create_server_socket(const char *ip, uint16_t port,
   if (server_socket->fd < 0) {
     fprintf(stderr, "Error creating socket: ");
     server_socket->fd = -1;
-    return server_socket;
+    return NULL;
   }
 
   // Set up the server address structure
@@ -29,17 +29,24 @@ Socket *create_server_socket(const char *ip, uint16_t port,
       perror("Invalid IP address");
       close(server_socket->fd);
       server_socket->fd = -1;
-      return server_socket;
+      return NULL;
     }
   }
 
+  // set SO_REUSEADDR option to allow reuse of the address
+  int opt = 1;
+  if (setsockopt(server_socket->fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+    perror("setsockopt failed");
+    close(server_socket->fd);
+    exit(EXIT_FAILURE);
+  }
   // Bind the socket to the address
   if (bind(server_socket->fd, (struct sockaddr *)&serv_addr,
            sizeof(serv_addr)) < 0) {
     perror("Error binding socket");
     close(server_socket->fd);
     server_socket->fd = -1;
-    return server_socket;
+    return NULL;
   }
 
   // Set the socket to listen for incoming connections
@@ -47,6 +54,7 @@ Socket *create_server_socket(const char *ip, uint16_t port,
     perror("Error listening on socket");
     close(server_socket->fd);
     server_socket->fd = -1;
+    return NULL;
   }
 
   return server_socket;
@@ -60,7 +68,7 @@ Socket *accept_client_connection(Socket *server_socket) {
   client_socket->fd = accept(server_socket->fd, (struct sockaddr *)NULL, NULL);
   if (client_socket->fd < 0) {
     fprintf(stderr, "Error accepting connection: ");
-    return client_socket;
+    return NULL;
   }
   printf("Accepted connection from client\n");
 

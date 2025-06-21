@@ -90,13 +90,15 @@ int main(int argc, char *argv[]) {
   // Create socket
   Socket *server_socket =
       create_server_socket("INADDR_ANY", 8080, config.max_connections);
+  if (!server_socket)
+    return 1;
 
   ThreadPool *pool = create_thread_pool(config.max_connections);
 
   while (1) {
     printf("Waiting for a connection...\n");
     Socket *client_socket = accept_client_connection(server_socket);
-    if (!client_socket)
+    if (client_socket == NULL)
       continue;
 
     // Read the message from the client

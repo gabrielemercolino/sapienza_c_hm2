@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
   // Create socket
   Socket *client_socket =
       create_client_socket(config.server_ip, config.server_port);
-  if (client_socket->fd < 0) {
+  if (!client_socket) {
     close_socket(client_socket);
     return 1;
   }

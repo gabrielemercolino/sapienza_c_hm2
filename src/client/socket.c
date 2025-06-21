@@ -13,7 +13,7 @@ Socket *create_client_socket(const char *server_ip,
   client_socket->buffer = NULL;
   if (client_socket->fd < 0) {
     fprintf(stderr, "Error creating socket: ");
-    return client_socket;
+    return NULL;
   }
 
   // Set server address and port
@@ -23,7 +23,7 @@ Socket *create_client_socket(const char *server_ip,
   if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0) {
     fprintf(stderr, "Invalid address: ");
     client_socket->fd = -1;
-    return client_socket;
+    return NULL;
   }
 
   // Connect to the server
@@ -38,7 +38,7 @@ Socket *create_client_socket(const char *server_ip,
               server_port);
     }
     client_socket->fd = -1;
-    return client_socket;
+    return NULL;
   }
   printf("Connected to server %s:%hu\n", server_ip, server_port);
 
