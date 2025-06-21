@@ -21,9 +21,9 @@ typedef struct {
 void handle_client(ClientHandle *handle) {
   Message *message = handle->message;
 
-  size_t padding_length = message->enc_len - message->org_len;
-  char *decrypted_text = decrypt_message(message->msg, padding_length,
-                                         message->key, message->threads);
+  size_t padding_length = message->encrypted_len - message->original_len;
+  char *decrypted_text = decrypt_message(
+      message->encrypted_text, padding_length, message->key, message->threads);
 
   // write file with padding. Può essere estratto nella funzione separata
   time_t now = time(NULL);
