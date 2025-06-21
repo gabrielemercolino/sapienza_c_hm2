@@ -2,12 +2,11 @@
 // Created by Pc on 13.06.2025.
 //
 #include <signal.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "../common/thread_pool.h"
+#include "common/thread_pool.h"
 #include "encryption.h"
 #include "get_text.h"
 
@@ -47,7 +46,6 @@ char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
 
   // Calcolo lunghezza e padding
   size_t length = strlen(text) * 8;
-  *out_len = length;
 
   size_t padding = BLOCK_SIZE - (length % BLOCK_SIZE);
   if (padding == BLOCK_SIZE) {
@@ -55,6 +53,7 @@ char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
   }
 
   size_t padded_len = length + padding;
+  *out_len = padded_len;
   size_t num_blocks = padded_len / BLOCK_SIZE;
 
   char *padded_text = calloc(1, padded_len); // auto padding con '\0'
