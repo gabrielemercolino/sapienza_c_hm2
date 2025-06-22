@@ -11,8 +11,11 @@ Socket *create_client_socket(const char *server_ip,
   Socket *client_socket = malloc(sizeof(Socket));
   client_socket->fd = socket(AF_INET, SOCK_STREAM, 0);
   client_socket->buffer = NULL;
+  client_socket->buffer_size = 0;
   if (client_socket->fd < 0) {
     fprintf(stderr, "Error creating socket: ");
+    free(client_socket->buffer);
+    free(client_socket);
     return NULL;
   }
 
@@ -22,7 +25,8 @@ Socket *create_client_socket(const char *server_ip,
   serv_addr.sin_port = htons(server_port);
   if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0) {
     fprintf(stderr, "Invalid address: ");
-    client_socket->fd = -1;
+    free(client_socket->buffer);
+    free(client_socket);
     return NULL;
   }
 
@@ -37,7 +41,8 @@ Socket *create_client_socket(const char *server_ip,
       fprintf(stderr, "Error connecting to server %s:%hu: ", server_ip,
               server_port);
     }
-    client_socket->fd = -1;
+    free(client_socket->buffer);
+    free(client_socket);
     return NULL;
   }
   printf("Connected to server %s:%hu\n", server_ip, server_port);

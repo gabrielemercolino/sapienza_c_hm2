@@ -30,10 +30,8 @@ int main(int argc, char *argv[]) {
   // Create socket
   Socket *client_socket =
       create_client_socket(config.server_ip, config.server_port);
-  if (!client_socket) {
-    close_socket(client_socket);
+  if (!client_socket)
     return 1;
-  }
 
   // Get file text
   char *text = get_text(config.file_path);
