@@ -9,18 +9,27 @@ char *get_text(const char *filename) {
   FILE *file = fopen(filename, "rb");
   if (!file) {
     perror("Error opening file");
-    return text;
+    return NULL;
   }
 
   fseek(file, 0, SEEK_END);
-  long length = ftell(file);
+  size_t length = ftell(file);
   fseek(file, 0, SEEK_SET);
 
   text = malloc(length + 1);
-  size_t bytes_read = fread(text, length - 1, 1, file);
-
-  if (fclose(file)) {
-    free(text);
+  if (!text) {
+    fclose(file);
+    return NULL;
   }
+
+  size_t bytes_read = fread(text, 1, length, file);
+  fclose(file);
+
+  if (bytes_read != length) {
+    free(text);
+    return NULL;
+  }
+
+  text[length] = '\0';
   return text;
 }

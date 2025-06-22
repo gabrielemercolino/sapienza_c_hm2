@@ -47,9 +47,6 @@ char *decrypt_message(char *ciphertext, size_t padded_len, uint64_t key,
 
   size_t num_blocks = padded_len / BLOCK_SIZE;
 
-  printf("padding_len=%zu\n", padded_len);
-  printf("num_blocks=%zu\n", num_blocks);
-
   ThreadPool *pool = create_thread_pool(n_threads);
 
   // per ogni blocco da 64 bit creo decrypt task e avvio il thread pool
@@ -69,6 +66,14 @@ char *decrypt_message(char *ciphertext, size_t padded_len, uint64_t key,
 
   thread_pool_join(pool);
   thread_pool_free(pool);
+
+  
+  // Ripristinare handler originali
+  signal(SIGINT, SIG_DFL);
+  signal(SIGALRM, SIG_DFL);
+  signal(SIGUSR1, SIG_DFL);
+  signal(SIGUSR2, SIG_DFL);
+  signal(SIGTERM, SIG_DFL);
 
   return output;
 }

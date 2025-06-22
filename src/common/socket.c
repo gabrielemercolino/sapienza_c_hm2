@@ -92,8 +92,6 @@ void close_socket(Socket *socket) {
   }
   if (socket->buffer) {
     free(socket->buffer);
-    socket->buffer = NULL;
-    socket->buffer_size = 0;
   }
   free(socket);
 }

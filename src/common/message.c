@@ -11,21 +11,17 @@ Message *get_message(Socket *socket) {
   enum MessageType msg_type = (enum MessageType) * cursor;
   cursor += sizeof(enum MessageType);
 
-  const size_t min_message_size = sizeof(enum MessageType) +
-                                  sizeof(message->encrypted_len) +
-                                  sizeof(message->original_len);
+  const size_t min_message_size =
+      sizeof(enum MessageType) + sizeof(message->original_len) +
+      sizeof(message->encrypted_len) + sizeof(message->key);
 
   // Check msg type
   if (msg_type != ENC_MSG) {
     fprintf(stderr, "Expect a message\n");
-    free(message->encrypted_text);
-    message->encrypted_text = NULL;
-    return message;
+    return NULL;
   } else if (socket->buffer_size < min_message_size) {
     fprintf(stderr, "Incomplete message");
-    free(message->encrypted_text);
-    message->encrypted_text = NULL;
-    return message;
+    return NULL;
   }
 
   // Read original length
@@ -36,30 +32,18 @@ Message *get_message(Socket *socket) {
   memcpy(&message->encrypted_len, cursor, sizeof(message->encrypted_len));
   cursor += sizeof(message->encrypted_len);
 
-  if (socket->buffer_size <
-      min_message_size + message->encrypted_len + sizeof(message->key)) {
-    fprintf(stderr, "Incomplete message\n");
-    free(message->encrypted_text);
-    message->encrypted_text = NULL;
-    return message;
-  }
-
-  // Read encrypted message
-  message->encrypted_text = malloc(message->encrypted_len);
-  memcpy(message->encrypted_text, cursor, message->encrypted_len);
-  cursor += sizeof(message->encrypted_len);
-
   // Read key
   memcpy(&message->key, cursor, sizeof(message->key));
   cursor += sizeof(message->key);
 
-  // Read threads
-  memcpy(&message->threads, cursor, sizeof(message->threads));
+  if (socket->buffer_size != (min_message_size + message->encrypted_len / 8)) {
+    fprintf(stderr, "Incomplete message");
+    return NULL;
+  }
 
-  // Print
-  printf("Original Length: %zu\n", message->original_len);
-  printf("Encrypted length: %zu\n", message->encrypted_len);
-  printf("Key: %lu\n", message->key);
+  // Read encrypted message
+  message->encrypted_text = calloc(1, message->encrypted_len / 8);
+  memcpy(message->encrypted_text, cursor, message->encrypted_len / 8);
 
   return message;
 }
