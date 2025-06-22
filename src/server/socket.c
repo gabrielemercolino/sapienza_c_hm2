@@ -38,7 +38,8 @@ Socket *create_server_socket(const char *ip, uint16_t port,
   if (setsockopt(server_socket->fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
     perror("setsockopt failed");
     close(server_socket->fd);
-    exit(EXIT_FAILURE);
+    server_socket->fd = -1;
+    return NULL;
   }
   // Bind the socket to the address
   if (bind(server_socket->fd, (struct sockaddr *)&serv_addr,
