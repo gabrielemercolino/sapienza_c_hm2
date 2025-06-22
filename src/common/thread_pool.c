@@ -78,14 +78,14 @@ TPTaskResult thread_pool_do(ThreadPool *pool, task_func_t fn, void *arg) {
   pthread_t thread;
   int res = pthread_create(&thread, NULL, task_wrapper, task);
 
-  // res == 0 -> ok
+  // resources == 0 -> ok
   if (res == 0) {
     // ensures that the thread can close on it's own, the join machanism
     // is not required and is implemented manually
     pthread_detach(thread);
     // the semaphore in this case has to be updated only when the task is done
     // in `task_wrapper`
-    return OK;
+    return STARTED;
   }
 
   // I still have to ensure to have a valid state
@@ -126,14 +126,14 @@ TPTaskResult thread_pool_try_do(ThreadPool *pool, task_func_t fn, void *arg) {
   pthread_t thread;
   int res = pthread_create(&thread, NULL, task_wrapper, task);
 
-  // res == 0 -> ok
+  // resources == 0 -> ok
   if (res == 0) {
     // ensures that the thread can close on it's own, the join machanism
     // is not required and is implemented manually
     pthread_detach(thread);
     // the semaphore in this case has to be updated only when the task is done
     // in `task_wrapper`
-    return OK;
+    return STARTED;
   }
 
   // I still have to ensure to have a valid state

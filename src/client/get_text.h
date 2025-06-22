@@ -1,6 +1,5 @@
 #pragma once
 #include <stddef.h>
-#include <stdint.h>
 
 /**
  * @brief Reads a text file and returns its content.

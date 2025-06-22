@@ -15,7 +15,7 @@ typedef struct ThreadPool ThreadPool;
 typedef void (*task_func_t)(void *arg);
 
 typedef enum {
-  OK,              // task created and started
+  STARTED,         // task created and started
   POOL_BUSY,       // thread pool has not free threads
   FAILED_CREATION, // failed to allocate memory for the task
   FAILED_START     // failed to start the task

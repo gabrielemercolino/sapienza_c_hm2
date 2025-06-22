@@ -1,9 +1,10 @@
 #include "args.h"
+#include "client/encryption.h"
+#include "common/message.h"
 #include "get_text.h"
 #include "socket.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 int main(int argc, char *argv[]) {
@@ -27,41 +28,61 @@ int main(int argc, char *argv[]) {
          config.server_port);
 
   // Create socket
-  ClientSocket *client_socket = create_socket(config.server_ip, config.server_port);
-  if (client_socket->fd < 0) {
-    close_socket(client_socket);
+  Socket *client_socket =
+      create_client_socket(config.server_ip, config.server_port);
+  if (!client_socket)
     return 1;
-  }
 
   // Get file text
   char *text = get_text(config.file_path);
-  uint16_t length = strlen(text);
+  size_t original_len = strlen(text) * 8;
 
-
-
-
-  /* encryption */
-
-
-
-  
+  // the ciphered text can have '/0' inside and that would make
+  // strlen function not work properly
+  size_t encrypted_len;
+  char *encrypted_text = encrypt_file(config.file_path, config.key,
+                                      &encrypted_len, config.threads);
 
   // Send message to the server
-  int b_send = send_message(client_socket, length, text, config.key);
-  if (b_send < 0) {
+  clear_socket_buffer(client_socket);
+  enum MessageType msg_type = ENC_MSG;
+  add_message(client_socket, &msg_type, sizeof(enum MessageType));
+  add_message(client_socket, &original_len, sizeof(original_len));
+  add_message(client_socket, &encrypted_len, sizeof(encrypted_len));
+  add_message(client_socket, &config.key, sizeof(config.key));
+  add_message(client_socket, encrypted_text, encrypted_len / 8);
+
+  OpResult res = send_message(client_socket);
+  if (res == OP_ERROR) {
     close_socket(client_socket);
     return 1;
   }
 
-  // Receive ack from the server
-  char ack_buffer[64];
-  int b_read = receive_ack(client_socket, ack_buffer, 64);
-  if (b_read < 0) {
+  // Receive msg from the server
+  clear_socket_buffer(client_socket);
+  res = receive_message(client_socket);
+  if (res == OP_ERROR) {
     close_socket(client_socket);
     return 1;
+  }
+
+  // Process ack received
+  enum AckType ack_type = get_ack_type(client_socket);
+
+  // Take action based on received ack
+  int flag = 1;
+  if (ack_type == ACK_OK) {
+    flag = 0;
+    printf("OK\n");
+  } else if (ack_type == ACK_ERROR) {
+    fprintf(stderr, "Error\n");
+  } else if (ack_type == ACK_POOL_FAILED) {
+    fprintf(stderr, "Error creating thread pool\n");
+  } else {
+    fprintf(stderr, "Unknow ack type\n");
   }
 
   // Close connection
   close_socket(client_socket);
-  return 0;
+  return flag;
 }
