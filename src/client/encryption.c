@@ -8,7 +8,7 @@
 
 #include "common/thread_pool.h"
 #include "encryption.h"
-#include "get_text.h"
+#include "get_data.h"
 
 #define BLOCK_SIZE 64
 
@@ -30,8 +30,8 @@ void xor_encrypt_block(void *arg) {
 
 static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
 
-char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
-                   size_t threads) {
+char *encrypt_file(const char *filename, uint64_t key, 
+                   size_t *in_len, size_t *out_len, size_t threads) {
   // blocca solo i segnali specificati
   signal(SIGINT, signal_handler);
   signal(SIGALRM, signal_handler);
@@ -39,13 +39,13 @@ char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
   signal(SIGUSR2, signal_handler);
   signal(SIGTERM, signal_handler);
 
-  char *text = get_text(filename);
-  if (!text) {
+  char *data = get_data(filename, in_len);
+  if (!data) {
     return NULL;
   }
 
   // Calcolo lunghezza e padding
-  size_t length = strlen(text) * 8;
+  size_t length = strlen(data) * 8;
 
   size_t padding = BLOCK_SIZE - (length % BLOCK_SIZE);
   if (padding == BLOCK_SIZE) {
@@ -53,14 +53,14 @@ char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
   }
 
   size_t padded_len = length + padding;
-  *out_len = padded_len;
+  *out_len = padded_len / 8;
   size_t num_blocks = padded_len / BLOCK_SIZE;
 
-  char *padded_text = calloc(1, padded_len); // auto padding con '\0'
-  memcpy(padded_text, text, length);
-  free(text);
+  char *padded_text = calloc(1, padded_len/8); // auto padding con '\0'
+  memcpy(padded_text, data, length/8);
+  free(data);
 
-  char *ciphertext = malloc(padded_len);
+  char *ciphertext = malloc(padded_len/8);
   if (!ciphertext) {
     free(padded_text);
     return NULL;

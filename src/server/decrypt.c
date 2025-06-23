@@ -43,9 +43,9 @@ char *decrypt_message(char *ciphertext, size_t padded_len, uint64_t key,
   signal(SIGUSR2, signal_handler);
   signal(SIGTERM, signal_handler);
 
-  char *output = malloc(padded_len / 8);
+  char *output = malloc(padded_len);
 
-  size_t num_blocks = padded_len / BLOCK_SIZE;
+  size_t num_blocks = padded_len*8 / BLOCK_SIZE;
 
   ThreadPool *pool = create_thread_pool(n_threads);
 

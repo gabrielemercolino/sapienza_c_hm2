@@ -17,7 +17,7 @@ typedef struct {
   size_t original_len;  // Length of the original message
   size_t encrypted_len; // Length of the encrypted message
   uint64_t key;         // Key for encryption/decryption
-  char *encrypted_text; // Pointer to the message data
+  char *encrypted_data; // Pointer to the message data
 } Message;
 
 /**
