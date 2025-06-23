@@ -1,12 +1,8 @@
 #include "socket.h"
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 void clear_socket_buffer(Socket *socket) {
@@ -93,5 +89,4 @@ void close_socket(Socket *socket) {
   if (socket->buffer) {
     free(socket->buffer);
   }
-  free(socket);
 }
