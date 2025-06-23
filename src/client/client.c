@@ -1,7 +1,6 @@
 #include "args.h"
+#include "client/encryption.h"
 #include "common/message.h"
-#include "encryption.h"
-#include "get_text.h"
 #include "socket.h"
 
 #include <stdio.h>
@@ -38,15 +37,16 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // Get file text
-  char *text = get_text(config.file_path);
-  size_t original_len = strlen(text) * 8;
-
   // the ciphered text can have '/0' inside and that would make
   // strlen function not work properly
-  size_t encrypted_len;
-  char *encrypted_text = encrypt_file(config.file_path, config.key,
-                                      &encrypted_len, config.threads);
+  size_t original_len, encrypted_len;
+  unsigned char *encrypted_data =
+      encrypt_file(config.file_path, config.key, &original_len, &encrypted_len,
+                   config.threads);
+  if (!encrypted_data) {
+    close_socket(client_socket);
+    return 1;
+  }
 
   // Send message to the server
   clear_socket_buffer(client_socket);
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
   add_message(client_socket, &original_len, sizeof(original_len));
   add_message(client_socket, &encrypted_len, sizeof(encrypted_len));
   add_message(client_socket, &config.key, sizeof(config.key));
-  add_message(client_socket, encrypted_text, encrypted_len / 8);
+  add_message(client_socket, encrypted_data, encrypted_len);
 
   OpResult res = send_message(client_socket);
   if (res == OP_ERROR) {

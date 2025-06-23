@@ -13,19 +13,19 @@
 #define BLOCK_SIZE 64
 
 typedef struct {
-  char *plaintext;
-  char *ciphertext;
+  unsigned char *plaindata;
+  unsigned char *cipherdata;
   size_t index;
   uint64_t key;
 } DecryptTask;
 
 void decrypt_block(void *arg) {
   DecryptTask *task = (DecryptTask *)arg;
-  uint64_t *plaintext = (uint64_t *)task->plaintext;
-  uint64_t *ciphertext = (uint64_t *)task->ciphertext;
+  uint64_t *plaindata = (uint64_t *)task->plaindata;
+  uint64_t *cipherdata = (uint64_t *)task->cipherdata;
 
-  uint64_t block = ciphertext[task->index];
-  uint64_t *out = &plaintext[task->index];
+  uint64_t block = cipherdata[task->index];
+  uint64_t *out = &plaindata[task->index];
 
   *out = block ^ task->key;
 
@@ -34,7 +34,7 @@ void decrypt_block(void *arg) {
 
 static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
 
-char *decrypt_message(char *ciphertext, size_t padded_len, uint64_t key,
+unsigned char *decrypt_message(char *cipherdata, size_t padded_len, uint64_t key,
                       size_t n_threads) {
   // blocca solo i segnali specificati
   signal(SIGINT, signal_handler);
@@ -43,9 +43,9 @@ char *decrypt_message(char *ciphertext, size_t padded_len, uint64_t key,
   signal(SIGUSR2, signal_handler);
   signal(SIGTERM, signal_handler);
 
-  char *output = malloc(padded_len / 8);
+  unsigned char *output = malloc(padded_len);
 
-  size_t num_blocks = padded_len / BLOCK_SIZE;
+  size_t num_blocks = padded_len*8 / BLOCK_SIZE;
 
   ThreadPool *pool = create_thread_pool(n_threads);
 
@@ -53,8 +53,8 @@ char *decrypt_message(char *ciphertext, size_t padded_len, uint64_t key,
   for (size_t i = 0; i < num_blocks; ++i) {
     DecryptTask *task = malloc(sizeof(DecryptTask));
 
-    task->plaintext = output;
-    task->ciphertext = ciphertext;
+    task->plaindata = output;
+    task->cipherdata = cipherdata;
     task->index = i;
     task->key = key;
 
@@ -66,7 +66,6 @@ char *decrypt_message(char *ciphertext, size_t padded_len, uint64_t key,
 
   thread_pool_join(pool);
   thread_pool_free(pool);
-
   
   // Ripristinare handler originali
   signal(SIGINT, SIG_DFL);
