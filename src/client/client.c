@@ -5,6 +5,7 @@
 #include "socket.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 int main(int argc, char *argv[]) {
@@ -28,10 +29,14 @@ int main(int argc, char *argv[]) {
          config.server_port);
 
   // Create socket
-  Socket *client_socket =
-      create_client_socket(config.server_ip, config.server_port);
-  if (!client_socket)
+  // It could be allocated in the stack
+  Socket *client_socket = malloc(sizeof(Socket));
+  CSStatus status =
+      create_client_socket(client_socket, config.server_ip, config.server_port);
+  if (status != CS_OK) {
+    fprintf(stderr, "%s\n", cs_status_to_string(status));
     return 1;
+  }
 
   // Get file text
   char *text = get_text(config.file_path);
@@ -84,5 +89,6 @@ int main(int argc, char *argv[]) {
 
   // Close connection
   close_socket(client_socket);
+  free(client_socket);
   return flag;
 }
