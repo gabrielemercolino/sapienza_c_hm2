@@ -1,6 +1,6 @@
 #include "args.h"
-#include "client/encryption.h"
 #include "common/message.h"
+#include "encryption.h"
 #include "get_text.h"
 #include "socket.h"
 
