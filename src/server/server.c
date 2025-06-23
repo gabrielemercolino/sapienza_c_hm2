@@ -23,8 +23,8 @@ void generate_filename(char *buffer, size_t buffer_size, const char *prefix);
 void handle_client(ClientHandle *handle) {
   Message *message = handle->message;
 
-  char *decrypted_text =
-      decrypt_message(message->encrypted_text, message->encrypted_len,
+  unsigned char *decrypted_data =
+      decrypt_message(message->encrypted_data, message->encrypted_len,
                       message->key, handle->threads);
 
   char fname[strlen(handle->file_prefix) + 32];
@@ -45,10 +45,10 @@ void handle_client(ClientHandle *handle) {
     close_socket(handle->client_socket);
   }
 
-  fputs(decrypted_text, fout);
+  fputs(decrypted_data, fout);
 
   fclose(fout);
-  free(decrypted_text);
+  free(decrypted_data);
 
   enum MessageType msg_type = ACK;
   enum AckType ack_type = ACK_OK;
@@ -93,7 +93,12 @@ int main(int argc, char *argv[]) {
   if (!server_socket)
     return 1;
 
-  ThreadPool *pool = create_thread_pool(config.max_connections);
+  ThreadPool *pool = create_thread_pool(config.threads);
+  if (pool == NULL) {
+    fprintf(stderr, "Error creating thread pool\n");
+    close_socket(server_socket);
+    return 1;
+  }
 
   while (1) {
     printf("Waiting for a connection...\n");
