@@ -13,8 +13,8 @@
 #define BLOCK_SIZE 64
 
 typedef struct {
-  unsigned char *plaindata;
-  unsigned char *cipherdata;
+  char *plaindata;
+  char *cipherdata;
   size_t index;
   uint64_t key;
 } DecryptTask;
@@ -34,7 +34,7 @@ void decrypt_block(void *arg) {
 
 static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
 
-unsigned char *decrypt_message(char *cipherdata, size_t padded_len, uint64_t key,
+char *decrypt_message(char *cipherdata, size_t padded_len, uint64_t key,
                       size_t n_threads) {
   // blocca solo i segnali specificati
   signal(SIGINT, signal_handler);
@@ -43,7 +43,7 @@ unsigned char *decrypt_message(char *cipherdata, size_t padded_len, uint64_t key
   signal(SIGUSR2, signal_handler);
   signal(SIGTERM, signal_handler);
 
-  unsigned char *output = malloc(padded_len);
+  char *output = malloc(padded_len);
 
   size_t num_blocks = padded_len*8 / BLOCK_SIZE;
 

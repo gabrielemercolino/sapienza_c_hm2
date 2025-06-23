@@ -23,7 +23,7 @@ void generate_filename(char *buffer, size_t buffer_size, const char *prefix);
 void handle_client(ClientHandle *handle) {
   Message *message = handle->message;
 
-  unsigned char *decrypted_data =
+  char *decrypted_data =
       decrypt_message(message->encrypted_data, message->encrypted_len,
                       message->key, handle->threads);
 

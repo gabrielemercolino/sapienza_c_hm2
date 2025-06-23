@@ -4,7 +4,7 @@
 
 #include "get_data.h"
 
-unsigned char *get_data(const char *filename, size_t *length) {
+char *get_data(const char *filename, size_t *length) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
         perror("Error opening file");
@@ -21,7 +21,7 @@ unsigned char *get_data(const char *filename, size_t *length) {
     *length = st.st_size;
 
     // Read file data
-    unsigned char *data = malloc(*length);
+    char *data = malloc(*length);
     if (!data) {
         fclose(file);
         return NULL;

@@ -7,4 +7,4 @@
  * @param length pointer to store the length of the content.
  * @return content.
  */
-unsigned char *get_data(const char *filename, size_t *length);
+char *get_data(const char *filename, size_t *length);

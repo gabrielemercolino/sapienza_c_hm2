@@ -30,7 +30,7 @@ void xor_encrypt_block(void *arg) {
 
 static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
 
-unsigned char *encrypt_file(const char *filename, uint64_t key, 
+char *encrypt_file(const char *filename, uint64_t key, 
                    size_t *in_len, size_t *out_len, size_t threads) {
   // blocca solo i segnali specificati
   signal(SIGINT, signal_handler);
@@ -39,7 +39,7 @@ unsigned char *encrypt_file(const char *filename, uint64_t key,
   signal(SIGUSR2, signal_handler);
   signal(SIGTERM, signal_handler);
 
-  unsigned char *data = get_data(filename, in_len);
+  char *data = get_data(filename, in_len);
   if (!data) {
     return NULL;
   }
@@ -57,11 +57,11 @@ unsigned char *encrypt_file(const char *filename, uint64_t key,
   size_t padded_len = padded_bit_len / 8;
   *out_len = padded_len;
 
-  unsigned char *padded_data = calloc(1, padded_len); // auto padding con '\0'
+  char *padded_data = calloc(1, padded_len); // auto padding con '\0'
   memcpy(padded_data, data, *in_len);
   free(data);
 
-  unsigned char *cipherdata = malloc(padded_len);
+  char *cipherdata = malloc(padded_len);
   if (!cipherdata) {
     free(padded_data);
     return NULL;
