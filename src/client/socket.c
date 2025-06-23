@@ -41,3 +41,22 @@ CSStatus create_client_socket(Socket *client_socket, const char *server_ip,
 
   return CS_OK;
 }
+
+char *cs_status_to_string(const CSStatus status) {
+  switch (status) {
+
+  case CS_OK:
+    return "ok";
+  case CS_FAILED_CREATION:
+    return "error creating socket";
+  case CS_INVALID_ADDRESS:
+    return "invalid address";
+  case CS_CONNECTION_REFUSED:
+    return "connection refused by server";
+  case CS_CONNECTION_ERROR:
+    return "error connecting to server";
+  }
+
+  // effectively unreachable but makes compiler happy
+  return "invalid status";
+}
