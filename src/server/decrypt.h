@@ -7,5 +7,5 @@
 #include <stddef.h>
 #include <stdint.h>
 
-unsigned char *decrypt_message(char *ciphertext, size_t padded_len, uint64_t key,
+char *decrypt_message(char *ciphertext, size_t padded_len, uint64_t key,
                       size_t n_threads);

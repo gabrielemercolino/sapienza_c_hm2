@@ -8,12 +8,12 @@
 #include <stdint.h>
 
 typedef struct {
-  unsigned char *plaindata;
-  unsigned char *cipherdata;
+  char *plaindata;
+  char *cipherdata;
   size_t index;
   uint64_t key;
 } EncryptTask;
 
-unsigned char *encrypt_file(const char *filename, uint64_t key, 
+char *encrypt_file(const char *filename, uint64_t key, 
                             size_t *in_len, size_t *out_len, 
                             size_t threads);

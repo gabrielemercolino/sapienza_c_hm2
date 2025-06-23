@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
   // the ciphered text can have '/0' inside and that would make
   // strlen function not work properly
   size_t original_len, encrypted_len;
-  unsigned char *encrypted_data = 
+  char *encrypted_data = 
       encrypt_file(config.file_path, config.key,
                    &original_len, &encrypted_len, config.threads);
   if (!encrypted_data) {
