@@ -1,5 +1,6 @@
 #include "args.h"
 #include "common/message.h"
+#include "common/socket.h"
 #include "encryption.h"
 #include "socket.h"
 
@@ -58,7 +59,8 @@ int main(int argc, char *argv[]) {
   add_message(client_socket, encrypted_data, encrypted_len);
 
   OpResult res = send_message(client_socket);
-  if (res == OP_ERROR) {
+  if (res != OP_MESSAGE_SENT) {
+    fprintf(stderr, "%s\n", op_result_to_string(res));
     close_socket(client_socket);
     return 1;
   }
@@ -66,7 +68,8 @@ int main(int argc, char *argv[]) {
   // Receive msg from the server
   clear_socket_buffer(client_socket);
   res = receive_message(client_socket);
-  if (res == OP_ERROR) {
+  if (res != OP_MESSAGE_RECEIVED) {
+    fprintf(stderr, "%s\n", op_result_to_string(res));
     close_socket(client_socket);
     return 1;
   }
