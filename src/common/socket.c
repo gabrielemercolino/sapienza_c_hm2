@@ -82,3 +82,26 @@ void close_socket(Socket *socket) {
     free(socket->buffer);
   }
 }
+
+char *op_result_to_string(const OpResult result) {
+  switch (result) {
+  case OP_FAILED_LENGTH_SEND:
+    return "error sending message length";
+  case OP_FAILED_LENGTH_RECEIVE:
+    return "error reading message length";
+  case OP_FAILED_BUFFER_ALLOC:
+    return "error allocating memory for message buffer";
+  case OP_FAILED_BUFFER_SEND:
+    return "error sending buffer data";
+  case OP_FAILED_BUFFER_RECEIVE:
+    return "error reading buffer data";
+  case OP_MESSAGE_ADDED:
+    return "added data to message";
+  case OP_MESSAGE_SENT:
+    return "message sent successfully";
+  case OP_MESSAGE_RECEIVED:
+    return "message read successfully";
+  }
+
+  return "unknown result";
+}
