@@ -1,9 +1,11 @@
 #include "args.h"
-#include "client/encryption.h"
 #include "common/message.h"
+#include "common/socket.h"
+#include "encryption.h"
 #include "socket.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 int main(int argc, char *argv[]) {
@@ -27,19 +29,25 @@ int main(int argc, char *argv[]) {
          config.server_port);
 
   // Create socket
-  Socket *client_socket =
-      create_client_socket(config.server_ip, config.server_port);
-  if (!client_socket)
+  // It could be allocated in the stack
+  Socket *client_socket = malloc(sizeof(Socket));
+  CSStatus status =
+      create_client_socket(client_socket, config.server_ip, config.server_port);
+  if (status != CS_OK) {
+    fprintf(stderr, "%s\n", cs_status_to_string(status));
+    free(client_socket);
     return 1;
+  }
 
   // the ciphered text can have '/0' inside and that would make
   // strlen function not work properly
   size_t original_len, encrypted_len;
-  char *encrypted_data = 
-      encrypt_file(config.file_path, config.key,
-                   &original_len, &encrypted_len, config.threads);
+  char *encrypted_data =
+      encrypt_file(config.file_path, config.key, &original_len, &encrypted_len,
+                   config.threads);
   if (!encrypted_data) {
     close_socket(client_socket);
+    free(client_socket);
     return 1;
   }
 
@@ -53,16 +61,20 @@ int main(int argc, char *argv[]) {
   add_message(client_socket, encrypted_data, encrypted_len);
 
   OpResult res = send_message(client_socket);
-  if (res == OP_ERROR) {
+  if (res != OP_MESSAGE_SENT) {
+    fprintf(stderr, "%s\n", op_result_to_string(res));
     close_socket(client_socket);
+    free(client_socket);
     return 1;
   }
 
   // Receive msg from the server
   clear_socket_buffer(client_socket);
   res = receive_message(client_socket);
-  if (res == OP_ERROR) {
+  if (res != OP_MESSAGE_RECEIVED) {
+    fprintf(stderr, "%s\n", op_result_to_string(res));
     close_socket(client_socket);
+    free(client_socket);
     return 1;
   }
 
@@ -84,5 +96,6 @@ int main(int argc, char *argv[]) {
 
   // Close connection
   close_socket(client_socket);
+  free(client_socket);
   return flag;
 }
