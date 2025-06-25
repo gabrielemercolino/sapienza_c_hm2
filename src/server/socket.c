@@ -53,22 +53,19 @@ SSStatus create_server_socket(Socket *server_socket, const char *ip,
   return SS_OK;
 }
 
-Socket *accept_client_connection(Socket *server_socket) {
-  Socket *client_socket = malloc(sizeof(Socket));
+bool accept_client_connection(Socket *server_socket, Socket *client_socket) {
   client_socket->buffer = NULL;
   client_socket->buffer_size = 0;
 
   // Accept a client connection
   client_socket->fd = accept(server_socket->fd, (struct sockaddr *)NULL, NULL);
   if (client_socket->fd < 0) {
-    fprintf(stderr, "Error accepting connection: ");
     free(client_socket->buffer);
     free(client_socket);
-    return NULL;
+    return false;
   }
-  printf("Accepted connection from client\n");
 
-  return client_socket;
+  return true;
 }
 
 char *ss_status_to_string(const SSStatus status) {
