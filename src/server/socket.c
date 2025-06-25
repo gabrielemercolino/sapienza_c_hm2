@@ -6,18 +6,15 @@
 #include <string.h>
 #include <unistd.h>
 
-Socket *create_server_socket(const char *ip, uint16_t port,
-                             uint16_t max_connections) {
+SSStatus create_server_socket(Socket *server_socket, const char *ip,
+                              uint16_t port, uint16_t max_connections) {
   // Create socket
-  Socket *server_socket = malloc(sizeof(Socket));
   server_socket->fd = socket(AF_INET, SOCK_STREAM, 0);
   server_socket->buffer = NULL;
   server_socket->buffer_size = 0;
   if (server_socket->fd < 0) {
-    fprintf(stderr, "Error creating socket: ");
     free(server_socket->buffer);
-    free(server_socket);
-    return NULL;
+    return SS_FAILED_CREATION;
   }
 
   // Set up the server address structure
@@ -28,39 +25,32 @@ Socket *create_server_socket(const char *ip, uint16_t port,
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   } else {
     if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0) {
-      perror("Invalid IP address");
       free(server_socket->buffer);
-      free(server_socket);
-      return NULL;
+      return SS_INVALID_ADDRESS;
     }
   }
 
   // set SO_REUSEADDR option to allow reuse of the address
   int opt = 1;
-  if (setsockopt(server_socket->fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-    perror("setsockopt failed");
+  if (setsockopt(server_socket->fd, SOL_SOCKET, SO_REUSEADDR, &opt,
+                 sizeof(opt))) {
     free(server_socket->buffer);
-    free(server_socket);
-    return NULL;
+    return SS_FAILED_REUSEADDR;
   }
   // Bind the socket to the address
   if (bind(server_socket->fd, (struct sockaddr *)&serv_addr,
            sizeof(serv_addr)) < 0) {
-    perror("Error binding socket");
     free(server_socket->buffer);
-    free(server_socket);
-    return NULL;
+    return SS_FAILED_BINDING;
   }
 
   // Set the socket to listen for incoming connections
   if (listen(server_socket->fd, max_connections) < 0) {
-    perror("Error listening on socket");
     free(server_socket->buffer);
-    free(server_socket);
-    return NULL;
+    return SS_FAILED_LISTENING;
   }
 
-  return server_socket;
+  return SS_OK;
 }
 
 Socket *accept_client_connection(Socket *server_socket) {
@@ -79,4 +69,24 @@ Socket *accept_client_connection(Socket *server_socket) {
   printf("Accepted connection from client\n");
 
   return client_socket;
+}
+
+char *ss_status_to_string(const SSStatus status) {
+  switch (status) {
+  case SS_OK:
+    return "ok";
+  case SS_FAILED_CREATION:
+    return "failed to create socket";
+  case SS_INVALID_ADDRESS:
+    return "invalid address";
+  case SS_FAILED_REUSEADDR:
+    return "failed to allow reuse of address";
+  case SS_FAILED_BINDING:
+    return "failed to bind socket";
+  case SS_FAILED_LISTENING:
+    return "failed listening on socket";
+  }
+
+  // effectively unreachable but makes compiler happy
+  return "invalid status";
 }
