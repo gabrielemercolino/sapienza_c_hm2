@@ -1,10 +1,8 @@
 #include "socket.h"
 
 #include <arpa/inet.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 SSStatus create_server_socket(Socket *server_socket, const char *ip,
                               uint16_t port, uint16_t max_connections) {
