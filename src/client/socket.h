@@ -14,12 +14,12 @@ typedef enum {
 
 /**
  * @brief Create a client socket and connect to the server.
- * @param socket the socket to setup
+ * @param client_socket the socket to setup
  * @param server_ip The IP address of the server.
  * @param server_port The port number of the server.
  * @return The status.
  */
-CSStatus create_client_socket(Socket *socket, const char *server_ip,
+CSStatus create_client_socket(Socket *client_socket, const char *server_ip,
                               uint16_t server_port);
 
 char *cs_status_to_string(const CSStatus status);
