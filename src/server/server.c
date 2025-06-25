@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
     // Allocate on the heap as it will be passed to multiple threads
     Socket *client_socket = malloc(sizeof(Socket));
     assert(client_socket && "failed to allocate memory for the client socket");
-    if (!accept_client_connection(server_socket, client_socket)) {
+    if (!wait_client_connection(server_socket, client_socket)) {
       fprintf(stderr, "Error accepting connection\n");
       free(client_socket);
       continue;

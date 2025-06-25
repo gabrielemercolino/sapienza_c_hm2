@@ -51,7 +51,7 @@ SSStatus create_server_socket(Socket *server_socket, const char *ip,
   return SS_OK;
 }
 
-bool accept_client_connection(Socket *server_socket, Socket *client_socket) {
+bool wait_client_connection(Socket *server_socket, Socket *client_socket) {
   client_socket->buffer = NULL;
   client_socket->buffer_size = 0;
 

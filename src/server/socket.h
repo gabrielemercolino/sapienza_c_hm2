@@ -32,6 +32,6 @@ SSStatus create_server_socket(Socket *server_socket, const char *ip,
  * @param client_socket The client socket if it is accepted.
  * @return wheter the client connection was entablished or not.
  */
-bool accept_client_connection(Socket *server_socket, Socket *client_socket);
+bool wait_client_connection(Socket *server_socket, Socket *client_socket);
 
 char *ss_status_to_string(const SSStatus status);
