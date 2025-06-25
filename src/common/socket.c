@@ -18,8 +18,7 @@ OpResult add_message(Socket *socket, void *message, size_t message_size) {
   if (socket->buffer == NULL) {
     socket->buffer = malloc(message_size);
     if (socket->buffer == NULL) {
-      fprintf(stderr, "Error allocating memory for message buffer: ");
-      return OP_ERROR;
+      return OP_FAILED_BUFFER_ALLOC;
     }
     memcpy(socket->buffer, message, message_size);
     socket->buffer_size = message_size;
@@ -28,16 +27,15 @@ OpResult add_message(Socket *socket, void *message, size_t message_size) {
     void *new_buffer =
         realloc(socket->buffer, socket->buffer_size + message_size);
     if (new_buffer == NULL) {
-      fprintf(stderr, "Error reallocating memory for message buffer: ");
       clear_socket_buffer(socket);
-      return OP_ERROR;
+      return OP_FAILED_BUFFER_ALLOC;
     }
     socket->buffer = new_buffer;
     memcpy((char *)socket->buffer + socket->buffer_size, message, message_size);
     socket->buffer_size += message_size;
   }
 
-  return OP_OK;
+  return OP_MESSAGE_ADDED;
 }
 
 OpResult send_message(Socket *socket) {
@@ -45,19 +43,15 @@ OpResult send_message(Socket *socket) {
   int bytes_write =
       write(socket->fd, &socket->buffer_size, sizeof(socket->buffer_size));
   if (bytes_write < 0) {
-    fprintf(stderr, "Error sending message length: ");
-    return OP_ERROR;
+    return OP_FAILED_LENGTH_SEND;
   }
   // Send message
   bytes_write = write(socket->fd, socket->buffer, socket->buffer_size);
   if (bytes_write < 0) {
-    fprintf(stderr, "Error sending buffer data: ");
-    return OP_ERROR;
+    return OP_FAILED_BUFFER_SEND;
   }
-  // Print success message
-  printf("Sent message successfully (%ld byte)\n", socket->buffer_size);
 
-  return OP_OK;
+  return OP_MESSAGE_SENT;
 }
 
 OpResult receive_message(Socket *socket) {
@@ -65,18 +59,16 @@ OpResult receive_message(Socket *socket) {
   int bytes_read =
       read(socket->fd, &socket->buffer_size, sizeof(socket->buffer_size));
   if (bytes_read < 0) {
-    fprintf(stderr, "Error reading message length: ");
-    return OP_ERROR;
+    return OP_FAILED_LENGTH_RECEIVE;
   }
   // Receive message
   socket->buffer = malloc(socket->buffer_size);
   bytes_read = read(socket->fd, socket->buffer, socket->buffer_size);
   if (bytes_read < 0) {
-    fprintf(stderr, "Error reading buffer data: ");
-    return OP_ERROR;
+    return OP_FAILED_BUFFER_RECEIVE;
   }
 
-  return OP_OK;
+  return OP_MESSAGE_RECEIVED;
 }
 
 void close_socket(Socket *socket) {
