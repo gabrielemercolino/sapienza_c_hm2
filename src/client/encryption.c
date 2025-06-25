@@ -8,20 +8,20 @@
 
 #include "common/thread_pool.h"
 #include "encryption.h"
-#include "get_text.h"
+#include "get_data.h"
 
 #define BLOCK_SIZE 64
 
 void xor_encrypt_block(void *arg) {
   EncryptTask *task = (EncryptTask *)arg;
-  uint64_t *plaintext = (uint64_t *)task->plaintext;
-  uint64_t *ciphertext = (uint64_t *)task->ciphertext;
+  uint64_t *plaindata = (uint64_t *)task->plaindata;
+  uint64_t *cipherdata = (uint64_t *)task->cipherdata;
 
   // calcolare l'indirizzo dell'index-esimo blocco da cifrare (di 8 byte==64
-  // bit), prendilo dalla stringa plaintext e interpretalo come un uint64_t*
+  // bit), prendilo dalla stringa plaindata e interpretalo come un uint64_t*
   // (cioè come un blocco da 64 bit)
-  uint64_t block = plaintext[task->index];
-  uint64_t *out = &ciphertext[task->index];
+  uint64_t block = plaindata[task->index];
+  uint64_t *out = &cipherdata[task->index];
 
   *out = block ^ task->key;
 
@@ -30,8 +30,8 @@ void xor_encrypt_block(void *arg) {
 
 static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
 
-char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
-                   size_t threads) {
+char *encrypt_file(const char *filename, uint64_t key, 
+                   size_t *in_len, size_t *out_len, size_t threads) {
   // blocca solo i segnali specificati
   signal(SIGINT, signal_handler);
   signal(SIGALRM, signal_handler);
@@ -39,30 +39,30 @@ char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
   signal(SIGUSR2, signal_handler);
   signal(SIGTERM, signal_handler);
 
-  char *text = get_text(filename);
-  if (!text) {
+  char *data = get_data(filename, in_len);
+  if (!data) {
     return NULL;
   }
 
   // Calcolo lunghezza e padding
-  size_t length = strlen(text) * 8;
+  size_t bit_length = *in_len *8;
 
-  size_t padding = BLOCK_SIZE - (length % BLOCK_SIZE);
+  size_t padding = BLOCK_SIZE - (bit_length % BLOCK_SIZE);
   if (padding == BLOCK_SIZE) {
     padding = 0;
   }
 
-  size_t padded_len = length + padding;
-  *out_len = padded_len;
+  size_t padded_len = bit_length + padding;
+  *out_len = padded_len / 8;
   size_t num_blocks = padded_len / BLOCK_SIZE;
 
-  char *padded_text = calloc(1, padded_len); // auto padding con '\0'
-  memcpy(padded_text, text, length);
-  free(text);
+  char *padded_data = calloc(1, *out_len); // auto padding con '\0'
+  memcpy(padded_data, data, *in_len);
+  free(data);
 
-  char *ciphertext = malloc(padded_len);
-  if (!ciphertext) {
-    free(padded_text);
+  char *cipherdata = malloc(*out_len);
+  if (!cipherdata) {
+    free(padded_data);
     return NULL;
   }
 
@@ -70,8 +70,8 @@ char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
 
   for (size_t i = 0; i < num_blocks; ++i) {
     EncryptTask *task = malloc(sizeof(EncryptTask));
-    task->plaintext = padded_text;
-    task->ciphertext = ciphertext;
+    task->plaindata = padded_data;
+    task->cipherdata = cipherdata;
     task->index = i;
     task->key = key;
 
@@ -84,7 +84,7 @@ char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
   thread_pool_join(pool);
   thread_pool_free(pool);
 
-  free(padded_text);
+  free(padded_data);
 
   // Ripristinare handler originali
   signal(SIGINT, SIG_DFL);
@@ -93,5 +93,5 @@ char *encrypt_file(const char *filename, uint64_t key, size_t *out_len,
   signal(SIGUSR2, SIG_DFL);
   signal(SIGTERM, SIG_DFL);
   
-  return ciphertext;
+  return cipherdata;
 }
