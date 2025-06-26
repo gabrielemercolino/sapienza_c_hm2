@@ -5,6 +5,7 @@
 #include "socket.h"
 
 #include <assert.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +21,16 @@ typedef struct {
 
 void generate_filename(char *buffer, size_t buffer_size, const char *prefix);
 
+static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
+
 void handle_client(ClientHandle *handle) {
+  // Block only the specified signals
+  signal(SIGINT, signal_handler);
+  signal(SIGALRM, signal_handler);
+  signal(SIGUSR1, signal_handler);
+  signal(SIGUSR2, signal_handler);
+  signal(SIGTERM, signal_handler);
+
   Message *message = handle->message;
 
   char *decrypted_data =
@@ -49,6 +59,13 @@ void handle_client(ClientHandle *handle) {
 
   fclose(fout);
   free(decrypted_data);
+
+  // Reset the signal handlers to default
+  signal(SIGINT, SIG_DFL);
+  signal(SIGALRM, SIG_DFL);
+  signal(SIGUSR1, SIG_DFL);
+  signal(SIGUSR2, SIG_DFL);
+  signal(SIGTERM, SIG_DFL);
 
   printf("Saved in %s\n", fname);
 

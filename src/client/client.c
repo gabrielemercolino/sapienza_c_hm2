@@ -4,9 +4,12 @@
 #include "encryption.h"
 #include "socket.h"
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
 
 int main(int argc, char *argv[]) {
   ClientConfig config = {0};
@@ -39,8 +42,14 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // the ciphered text can have '/0' inside and that would make
-  // strlen function not work properly
+  // Set signal handlers to handle signals during encryption
+  signal(SIGINT, signal_handler);
+  signal(SIGALRM, signal_handler);
+  signal(SIGUSR1, signal_handler);
+  signal(SIGUSR2, signal_handler);
+  signal(SIGTERM, signal_handler);
+
+  // Encrypt file
   size_t original_len, encrypted_len;
   char *encrypted_data =
       encrypt_file(config.file_path, config.key, &original_len, &encrypted_len,
@@ -67,6 +76,14 @@ int main(int argc, char *argv[]) {
     free(client_socket);
     return 1;
   }
+  free(encrypted_data);
+
+  // Reset the signal handlers to default
+  signal(SIGINT, SIG_DFL);
+  signal(SIGALRM, SIG_DFL);
+  signal(SIGUSR1, SIG_DFL);
+  signal(SIGUSR2, SIG_DFL);
+  signal(SIGTERM, SIG_DFL);
 
   // Receive msg from the server
   clear_socket_buffer(client_socket);
