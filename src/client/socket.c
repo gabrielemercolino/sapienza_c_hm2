@@ -5,18 +5,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-Socket *create_client_socket(const char *server_ip,
-                             unsigned short server_port) {
+CSStatus create_client_socket(Socket *client_socket, const char *server_ip,
+                              unsigned short server_port) {
   // Create socket
-  Socket *client_socket = malloc(sizeof(Socket));
   client_socket->fd = socket(AF_INET, SOCK_STREAM, 0);
   client_socket->buffer = NULL;
   client_socket->buffer_size = 0;
   if (client_socket->fd < 0) {
-    fprintf(stderr, "Error creating socket: ");
     free(client_socket->buffer);
-    free(client_socket);
-    return NULL;
+    return CS_FAILED_CREATION;
   }
 
   // Set server address and port
@@ -24,28 +21,42 @@ Socket *create_client_socket(const char *server_ip,
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_port = htons(server_port);
   if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0) {
-    fprintf(stderr, "Invalid address: ");
     free(client_socket->buffer);
-    free(client_socket);
-    return NULL;
+    return CS_INVALID_ADDRESS;
   }
 
   // Connect to the server
   if (connect(client_socket->fd, (struct sockaddr *)&serv_addr,
               sizeof(serv_addr)) < 0) {
+    CSStatus error_status;
     // Refuse connection if the server is not available
     if (errno == ECONNREFUSED) {
-      fprintf(stderr, "Connection refused by server %s:%hu: ", server_ip,
-              server_port);
+      error_status = CS_CONNECTION_REFUSED;
     } else {
-      fprintf(stderr, "Error connecting to server %s:%hu: ", server_ip,
-              server_port);
+      error_status = CS_CONNECTION_ERROR;
     }
     free(client_socket->buffer);
-    free(client_socket);
-    return NULL;
+    return error_status;
   }
-  printf("Connected to server %s:%hu\n", server_ip, server_port);
 
-  return client_socket;
+  return CS_OK;
+}
+
+char *cs_status_to_string(const CSStatus status) {
+  switch (status) {
+
+  case CS_OK:
+    return "ok";
+  case CS_FAILED_CREATION:
+    return "error creating socket";
+  case CS_INVALID_ADDRESS:
+    return "invalid address";
+  case CS_CONNECTION_REFUSED:
+    return "connection refused by server";
+  case CS_CONNECTION_ERROR:
+    return "error connecting to server";
+  }
+
+  // effectively unreachable but makes compiler happy
+  return "invalid status";
 }

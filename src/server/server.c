@@ -1,14 +1,14 @@
 #include "args.h"
 #include "common/message.h"
 #include "common/thread_pool.h"
-#include "server/decrypt.h"
+#include "decrypt.h"
 #include "socket.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 typedef struct {
   Socket *client_socket;
@@ -32,7 +32,7 @@ void handle_client(ClientHandle *handle) {
 
   FILE *fout = fopen(fname, "w");
   if (fout == NULL) {
-    perror("fopen fail");
+    fprintf(stderr, "failed to create file %s\n", fname);
 
     enum MessageType msg_type = ACK;
     enum AckType ack_type = ACK_ERROR;
@@ -50,6 +50,8 @@ void handle_client(ClientHandle *handle) {
   fclose(fout);
   free(decrypted_data);
 
+  printf("Saved in %s\n", fname);
+
   enum MessageType msg_type = ACK;
   enum AckType ack_type = ACK_OK;
   clear_socket_buffer(handle->client_socket);
@@ -58,6 +60,7 @@ void handle_client(ClientHandle *handle) {
 
   send_message(handle->client_socket);
   close_socket(handle->client_socket);
+  free(handle->client_socket);
 }
 
 void handle_client_task(void *arg) {
@@ -88,28 +91,43 @@ int main(int argc, char *argv[]) {
          config.file_prefix, config.max_connections);
 
   // Create socket
-  Socket *server_socket =
-      create_server_socket("INADDR_ANY", 8080, config.max_connections);
-  if (!server_socket)
+  Socket *server_socket = malloc(sizeof(Socket));
+  assert(server_socket && "failed to allocate socket");
+
+  SSStatus status = create_server_socket(server_socket, "INADDR_ANY", 8080,
+                                         config.max_connections);
+  if (status != SS_OK) {
+    fprintf(stderr, "%s\n", ss_status_to_string(status));
+    free(server_socket);
     return 1;
+  }
 
   ThreadPool *pool = create_thread_pool(config.threads);
-  if (pool == NULL) {
+  if (!pool) {
     fprintf(stderr, "Error creating thread pool\n");
     close_socket(server_socket);
+    free(server_socket);
     return 1;
   }
 
   while (1) {
-    printf("Waiting for a connection...\n");
-    Socket *client_socket = accept_client_connection(server_socket);
-    if (!client_socket)
+    // Allocate on the heap as it will be passed to multiple threads
+    Socket *client_socket = malloc(sizeof(Socket));
+    assert(client_socket && "failed to allocate memory for the client socket");
+    if (!wait_client_connection(server_socket, client_socket)) {
+      fprintf(stderr, "Error accepting connection\n");
+      free(client_socket);
       continue;
+    }
+
+    printf("Accepted connection from client\n");
 
     // Read the message from the client
     clear_socket_buffer(client_socket);
     OpResult res = receive_message(client_socket);
-    if (res == OP_ERROR) {
+
+    if (res != OP_MESSAGE_RECEIVED) {
+      fprintf(stderr, "%s\n", op_result_to_string(res));
       close_socket(client_socket);
       continue;
     }
@@ -127,7 +145,9 @@ int main(int argc, char *argv[]) {
       close_socket(client_socket);
     }
 
+    // allocate on the heap as it's passed to multiple threads
     ClientHandle *handle = malloc(sizeof(ClientHandle));
+    assert(handle && "failed to allocate memory for the request handle");
     handle->message = message;
     handle->client_socket = client_socket;
     handle->file_prefix = config.file_prefix;
@@ -142,6 +162,7 @@ int main(int argc, char *argv[]) {
 
       send_message(client_socket);
       close_socket(client_socket);
+      free(client_socket);
     }
   }
   return 0;

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <stddef.h>
 
 // Structure for socket information.
@@ -9,8 +10,16 @@ typedef struct {
 } Socket;
 
 typedef enum {
-  OP_OK = 0,
-  OP_ERROR = 1,
+  OP_FAILED_LENGTH_SEND,
+  OP_FAILED_LENGTH_RECEIVE,
+
+  OP_FAILED_BUFFER_ALLOC,
+  OP_FAILED_BUFFER_SEND,
+  OP_FAILED_BUFFER_RECEIVE,
+
+  OP_MESSAGE_ADDED,
+  OP_MESSAGE_SENT,
+  OP_MESSAGE_RECEIVED,
 } OpResult;
 
 /**
@@ -47,3 +56,5 @@ OpResult receive_message(Socket *socket);
  * @param socket The socket to close.
  */
 void close_socket(Socket *socket);
+
+char *op_result_to_string(const OpResult result);
