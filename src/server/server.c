@@ -50,6 +50,8 @@ void handle_client(ClientHandle *handle) {
   fclose(fout);
   free(decrypted_data);
 
+  printf("Saved in %s\n", fname);
+
   enum MessageType msg_type = ACK;
   enum AckType ack_type = ACK_OK;
   clear_socket_buffer(handle->client_socket);
@@ -109,7 +111,6 @@ int main(int argc, char *argv[]) {
   }
 
   while (1) {
-    // printf("Waiting for a connection...\n");
     // Allocate on the heap as it will be passed to multiple threads
     Socket *client_socket = malloc(sizeof(Socket));
     assert(client_socket && "failed to allocate memory for the client socket");
@@ -126,6 +127,7 @@ int main(int argc, char *argv[]) {
     OpResult res = receive_message(client_socket);
 
     if (res != OP_MESSAGE_RECEIVED) {
+      fprintf(stderr, "%s\n", op_result_to_string(res));
       close_socket(client_socket);
       continue;
     }
