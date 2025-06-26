@@ -36,13 +36,6 @@ static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
 
 char *decrypt_message(char *cipherdata, size_t padded_len, uint64_t key,
                       size_t n_threads) {
-  // blocca solo i segnali specificati
-  signal(SIGINT, signal_handler);
-  signal(SIGALRM, signal_handler);
-  signal(SIGUSR1, signal_handler);
-  signal(SIGUSR2, signal_handler);
-  signal(SIGTERM, signal_handler);
-
   char *output = malloc(padded_len);
 
   size_t num_blocks = padded_len*8 / BLOCK_SIZE;
@@ -66,13 +59,6 @@ char *decrypt_message(char *cipherdata, size_t padded_len, uint64_t key,
 
   thread_pool_join(pool);
   thread_pool_free(pool);
-  
-  // Ripristinare handler originali
-  signal(SIGINT, SIG_DFL);
-  signal(SIGALRM, SIG_DFL);
-  signal(SIGUSR1, SIG_DFL);
-  signal(SIGUSR2, SIG_DFL);
-  signal(SIGTERM, SIG_DFL);
 
   return output;
 }
