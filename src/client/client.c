@@ -9,7 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
+static bool block_signals(sigset_t *new_mask, sigset_t *old_mask);
+static bool unblock_signals(sigset_t *old_mask);
 
 int main(int argc, char *argv[]) {
   ClientConfig config = {0};
@@ -31,6 +32,14 @@ int main(int argc, char *argv[]) {
          config.key, config.threads, config.file_path, config.server_ip,
          config.server_port);
 
+  sigset_t new_mask, old_mask;
+
+  // Set signal handlers to handle signals during encryption
+  if (!block_signals(&new_mask, &old_mask)) {
+    fprintf(stderr, "Couldn't block signals\n");
+    return 0;
+  }
+
   // Create socket
   // It could be allocated in the stack
   Socket *client_socket = malloc(sizeof(Socket));
@@ -41,13 +50,6 @@ int main(int argc, char *argv[]) {
     free(client_socket);
     return 1;
   }
-
-  // Set signal handlers to handle signals during encryption
-  signal(SIGINT, signal_handler);
-  signal(SIGALRM, signal_handler);
-  signal(SIGUSR1, signal_handler);
-  signal(SIGUSR2, signal_handler);
-  signal(SIGTERM, signal_handler);
 
   // Encrypt file
   size_t original_len, encrypted_len;
@@ -79,11 +81,9 @@ int main(int argc, char *argv[]) {
   free(encrypted_data);
 
   // Reset the signal handlers to default
-  signal(SIGINT, SIG_DFL);
-  signal(SIGALRM, SIG_DFL);
-  signal(SIGUSR1, SIG_DFL);
-  signal(SIGUSR2, SIG_DFL);
-  signal(SIGTERM, SIG_DFL);
+  if (!unblock_signals(&old_mask)) {
+    fprintf(stderr, "Couldn't unblock signals\n");
+  }
 
   // Receive msg from the server
   clear_socket_buffer(client_socket);
@@ -115,4 +115,25 @@ int main(int argc, char *argv[]) {
   close_socket(client_socket);
   free(client_socket);
   return flag;
+}
+
+static bool block_signals(sigset_t *new_mask, sigset_t *old_mask) {
+  sigemptyset(new_mask);
+  sigaddset(new_mask, SIGINT);
+  sigaddset(new_mask, SIGALRM);
+  sigaddset(new_mask, SIGUSR1);
+  sigaddset(new_mask, SIGUSR2);
+  sigaddset(new_mask, SIGTERM);
+
+  if (sigprocmask(SIG_BLOCK, new_mask, old_mask) < 0)
+    return false;
+
+  return true;
+}
+static bool unblock_signals(sigset_t *old_mask) {
+  if (sigprocmask(SIG_SETMASK, old_mask, NULL) < 0) {
+    return false;
+  }
+
+  return true;
 }
