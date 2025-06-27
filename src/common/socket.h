@@ -57,4 +57,9 @@ OpResult receive_message(Socket *socket);
  */
 void close_socket(Socket *socket);
 
+/**
+ * @brief Returns a string representation of the OpResult passed
+ * @param result
+ * @return the string representation
+ */
 char *op_result_to_string(const OpResult result);
