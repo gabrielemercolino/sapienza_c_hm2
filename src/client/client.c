@@ -1,15 +1,13 @@
 #include "args.h"
 #include "common/message.h"
+#include "common/signals.h"
 #include "common/socket.h"
 #include "encryption.h"
 #include "socket.h"
 
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
 
 int main(int argc, char *argv[]) {
   ClientConfig config = {0};
@@ -31,6 +29,14 @@ int main(int argc, char *argv[]) {
          config.key, config.threads, config.file_path, config.server_ip,
          config.server_port);
 
+  sigset_t new_mask, old_mask;
+
+  // Set signal handlers to handle signals during encryption
+  if (!block_signals(&new_mask, &old_mask)) {
+    fprintf(stderr, "Couldn't block signals\n");
+    return 1;
+  }
+
   // Create socket
   // It could be allocated in the stack
   Socket *client_socket = malloc(sizeof(Socket));
@@ -41,13 +47,6 @@ int main(int argc, char *argv[]) {
     free(client_socket);
     return 1;
   }
-
-  // Set signal handlers to handle signals during encryption
-  signal(SIGINT, signal_handler);
-  signal(SIGALRM, signal_handler);
-  signal(SIGUSR1, signal_handler);
-  signal(SIGUSR2, signal_handler);
-  signal(SIGTERM, signal_handler);
 
   // Encrypt file
   size_t original_len, encrypted_len;
@@ -79,11 +78,9 @@ int main(int argc, char *argv[]) {
   free(encrypted_data);
 
   // Reset the signal handlers to default
-  signal(SIGINT, SIG_DFL);
-  signal(SIGALRM, SIG_DFL);
-  signal(SIGUSR1, SIG_DFL);
-  signal(SIGUSR2, SIG_DFL);
-  signal(SIGTERM, SIG_DFL);
+  if (!unblock_signals(&old_mask)) {
+    fprintf(stderr, "Couldn't unblock signals\n");
+  }
 
   // Receive msg from the server
   clear_socket_buffer(client_socket);

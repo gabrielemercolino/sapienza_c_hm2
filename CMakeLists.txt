@@ -11,6 +11,13 @@ add_compile_options(-Wall -Wextra)
 # for headers 
 include_directories(src)
 
+# for signals
+add_compile_definitions(_POSIX_C_SOURCE=200809L)
+
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  message(FATAL_ERROR "Error: the project is Linux only")
+endif()
+
 file(GLOB_RECURSE COMMON_SRC ${CMAKE_SOURCE_DIR}/src/common/*.c)
 file(GLOB_RECURSE CLIENT_SRC ${CMAKE_SOURCE_DIR}/src/client/*.c)
 file(GLOB_RECURSE SERVER_SRC ${CMAKE_SOURCE_DIR}/src/server/*.c)
