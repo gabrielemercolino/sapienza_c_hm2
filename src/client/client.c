@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
   // Set signal handlers to handle signals during encryption
   if (!block_signals(&new_mask, &old_mask)) {
     fprintf(stderr, "Couldn't block signals\n");
-    return 0;
+    return 1;
   }
 
   // Create socket
