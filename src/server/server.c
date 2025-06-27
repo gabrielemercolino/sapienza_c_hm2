@@ -1,11 +1,11 @@
 #include "args.h"
 #include "common/message.h"
+#include "common/signals.h"
 #include "common/thread_pool.h"
 #include "decrypt.h"
 #include "socket.h"
 
 #include <assert.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,15 +21,14 @@ typedef struct {
 
 void generate_filename(char *buffer, size_t buffer_size, const char *prefix);
 
-static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
-
 void handle_client(ClientHandle *handle) {
-  // Block only the specified signals
-  signal(SIGINT, signal_handler);
-  signal(SIGALRM, signal_handler);
-  signal(SIGUSR1, signal_handler);
-  signal(SIGUSR2, signal_handler);
-  signal(SIGTERM, signal_handler);
+  sigset_t new_mask, old_mask;
+
+  // Set signal handlers to handle signals during encryption
+  if (!block_signals(&new_mask, &old_mask)) {
+    fprintf(stderr, "Couldn't block signals\n");
+    return;
+  }
 
   Message *message = handle->message;
 
@@ -61,11 +60,9 @@ void handle_client(ClientHandle *handle) {
   free(decrypted_data);
 
   // Reset the signal handlers to default
-  signal(SIGINT, SIG_DFL);
-  signal(SIGALRM, SIG_DFL);
-  signal(SIGUSR1, SIG_DFL);
-  signal(SIGUSR2, SIG_DFL);
-  signal(SIGTERM, SIG_DFL);
+  if (!unblock_signals(&old_mask)) {
+    fprintf(stderr, "Couldn't unblock signals\n");
+  }
 
   printf("Saved in %s\n", fname);
 
