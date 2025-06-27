@@ -1,5 +1,6 @@
 #include "args.h"
 #include "common/message.h"
+#include "common/signals.h"
 #include "common/thread_pool.h"
 #include "decrypt.h"
 #include "socket.h"
@@ -21,6 +22,14 @@ typedef struct {
 void generate_filename(char *buffer, size_t buffer_size, const char *prefix);
 
 void handle_client(ClientHandle *handle) {
+  sigset_t new_mask, old_mask;
+
+  // Set signal handlers to handle signals during encryption
+  if (!block_signals(&new_mask, &old_mask)) {
+    fprintf(stderr, "Couldn't block signals\n");
+    return;
+  }
+
   Message *message = handle->message;
 
   char *decrypted_data =
@@ -49,6 +58,11 @@ void handle_client(ClientHandle *handle) {
 
   fclose(fout);
   free(decrypted_data);
+
+  // Reset the signal handlers to default
+  if (!unblock_signals(&old_mask)) {
+    fprintf(stderr, "Couldn't unblock signals\n");
+  }
 
   printf("Saved in %s\n", fname);
 

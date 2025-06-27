@@ -1,5 +1,6 @@
 #include "args.h"
 #include "common/message.h"
+#include "common/signals.h"
 #include "common/socket.h"
 #include "encryption.h"
 #include "socket.h"
@@ -28,6 +29,14 @@ int main(int argc, char *argv[]) {
          config.key, config.threads, config.file_path, config.server_ip,
          config.server_port);
 
+  sigset_t new_mask, old_mask;
+
+  // Set signal handlers to handle signals during encryption
+  if (!block_signals(&new_mask, &old_mask)) {
+    fprintf(stderr, "Couldn't block signals\n");
+    return 1;
+  }
+
   // Create socket
   // It could be allocated in the stack
   Socket *client_socket = malloc(sizeof(Socket));
@@ -39,8 +48,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // the ciphered text can have '/0' inside and that would make
-  // strlen function not work properly
+  // Encrypt file
   size_t original_len, encrypted_len;
   char *encrypted_data =
       encrypt_file(config.file_path, config.key, &original_len, &encrypted_len,
@@ -66,6 +74,12 @@ int main(int argc, char *argv[]) {
     close_socket(client_socket);
     free(client_socket);
     return 1;
+  }
+  free(encrypted_data);
+
+  // Reset the signal handlers to default
+  if (!unblock_signals(&old_mask)) {
+    fprintf(stderr, "Couldn't unblock signals\n");
   }
 
   // Receive msg from the server

@@ -28,17 +28,8 @@ void xor_encrypt_block(void *arg) {
   free(task);
 }
 
-static void signal_handler(int sig) { printf("Ricevuto segnale %d\n", sig); }
-
 char *encrypt_file(const char *filename, uint64_t key, 
                    size_t *in_len, size_t *out_len, size_t threads) {
-  // blocca solo i segnali specificati
-  signal(SIGINT, signal_handler);
-  signal(SIGALRM, signal_handler);
-  signal(SIGUSR1, signal_handler);
-  signal(SIGUSR2, signal_handler);
-  signal(SIGTERM, signal_handler);
-
   char *data = get_data(filename, in_len);
   if (!data) {
     return NULL;
@@ -85,13 +76,6 @@ char *encrypt_file(const char *filename, uint64_t key,
   thread_pool_free(pool);
 
   free(padded_data);
-
-  // Ripristinare handler originali
-  signal(SIGINT, SIG_DFL);
-  signal(SIGALRM, SIG_DFL);
-  signal(SIGUSR1, SIG_DFL);
-  signal(SIGUSR2, SIG_DFL);
-  signal(SIGTERM, SIG_DFL);
   
   return cipherdata;
 }
