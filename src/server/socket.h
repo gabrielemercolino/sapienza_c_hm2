@@ -34,4 +34,9 @@ SSStatus create_server_socket(Socket *server_socket, const char *ip,
  */
 bool wait_client_connection(Socket *server_socket, Socket *client_socket);
 
+/**
+ * @brief Returns the string representation of the SSStatus passed
+ * @param status
+ * @return the string representation
+ */
 char *ss_status_to_string(const SSStatus status);

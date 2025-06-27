@@ -22,4 +22,9 @@ typedef enum {
 CSStatus create_client_socket(Socket *client_socket, const char *server_ip,
                               uint16_t server_port);
 
+/**
+ * @brief Returns a string representation of the CSStatus passed
+ * @param status
+ * @return The string representation
+ */
 char *cs_status_to_string(const CSStatus status);
