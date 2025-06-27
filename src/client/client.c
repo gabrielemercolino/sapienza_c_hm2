@@ -1,5 +1,6 @@
 #include "args.h"
 #include "common/message.h"
+#include "common/signals.h"
 #include "common/socket.h"
 #include "encryption.h"
 #include "socket.h"
@@ -8,9 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-static bool block_signals(sigset_t *new_mask, sigset_t *old_mask);
-static bool unblock_signals(sigset_t *old_mask);
 
 int main(int argc, char *argv[]) {
   ClientConfig config = {0};
@@ -115,25 +113,4 @@ int main(int argc, char *argv[]) {
   close_socket(client_socket);
   free(client_socket);
   return flag;
-}
-
-static bool block_signals(sigset_t *new_mask, sigset_t *old_mask) {
-  sigemptyset(new_mask);
-  sigaddset(new_mask, SIGINT);
-  sigaddset(new_mask, SIGALRM);
-  sigaddset(new_mask, SIGUSR1);
-  sigaddset(new_mask, SIGUSR2);
-  sigaddset(new_mask, SIGTERM);
-
-  if (sigprocmask(SIG_BLOCK, new_mask, old_mask) < 0)
-    return false;
-
-  return true;
-}
-static bool unblock_signals(sigset_t *old_mask) {
-  if (sigprocmask(SIG_SETMASK, old_mask, NULL) < 0) {
-    return false;
-  }
-
-  return true;
 }
